@@ -2,19 +2,16 @@
 resolver = "2"
 members = [
     "code/wasm-builder",
-
     # beginner tutorials
     "code/beginner/*",
-
     # intermediate tutorials
     "code/intermediate/*",
-
     # showcase
     "code/showcase/*",
-
     "run-wasm",
 ]
 exclude = [
     "code/showcase/imgui-demo",
+    "code/showcase/windowless"
     #"code/showcase/pong",
 ]

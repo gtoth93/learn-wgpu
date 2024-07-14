@@ -1,68 +1,98 @@
+use anyhow::Result;
+use tracing::Level;
 use winit::{
-    event::*,
-    event_loop::EventLoop,
+    application::ApplicationHandler,
+    event::{ElementState, KeyEvent, WindowEvent},
+    event_loop::{ActiveEventLoop, EventLoop},
     keyboard::{KeyCode, PhysicalKey},
-    window::WindowBuilder,
+    window::{Window, WindowId},
 };
 
-#[cfg(target_arch = "wasm32")]
-use wasm_bindgen::prelude::*;
+#[derive(Default)]
+struct App {
+    window: Option<Window>,
+}
 
-#[cfg_attr(target_arch = "wasm32", wasm_bindgen(start))]
-pub fn run() {
+impl ApplicationHandler for App {
+    fn resumed(&mut self, event_loop: &ActiveEventLoop) {
+        tracing::debug!("Resumed");
+        let window = event_loop
+            .create_window(Window::default_attributes())
+            .expect("Couldn't create window.");
+
+        #[cfg(target_arch = "wasm32")]
+        {
+            use winit::{dpi::PhysicalSize, platform::web::WindowExtWebSys};
+
+            let _ = window.request_inner_size(PhysicalSize::new(450, 400));
+            web_sys::window()
+                .and_then(|win| win.document())
+                .and_then(|doc| {
+                    let dst = doc.get_element_by_id("wasm-example")?;
+                    let canvas = web_sys::Element::from(window.canvas()?);
+                    dst.append_child(&canvas).ok()?;
+                    Some(())
+                })
+                .expect("Couldn't append canvas to document body.");
+        }
+
+        self.window = Some(window);
+    }
+
+    fn window_event(
+        &mut self,
+        event_loop: &ActiveEventLoop,
+        window_id: WindowId,
+        event: WindowEvent,
+    ) {
+        let Some(ref window) = self.window else {
+            return;
+        };
+        if window_id != window.id() {
+            return;
+        }
+        match event {
+            WindowEvent::CloseRequested
+            | WindowEvent::KeyboardInput {
+                event:
+                    KeyEvent {
+                        state: ElementState::Pressed,
+                        physical_key: PhysicalKey::Code(KeyCode::Escape),
+                        ..
+                    },
+                ..
+            } => event_loop.exit(),
+            _ => {}
+        }
+    }
+}
+
+pub fn run() -> Result<()> {
     cfg_if::cfg_if! {
         if #[cfg(target_arch = "wasm32")] {
-            std::panic::set_hook(Box::new(console_error_panic_hook::hook));
-            console_log::init_with_level(log::Level::Debug).expect("Couldn't initialize logger");
+            use tracing_subscriber::{
+                fmt::writer::MakeWriterExt, layer::SubscriberExt, util::SubscriberInitExt,
+            };
+
+            console_error_panic_hook::set_once();
+            let layer = tracing_subscriber::fmt::layer()
+                .with_ansi(false)
+                .without_time()
+                .with_writer(tracing_web::MakeWebConsoleWriter::new().with_max_level(Level::DEBUG));
+            tracing_subscriber::registry().with(layer).init();
         } else {
-            env_logger::init();
+            use tracing_subscriber::EnvFilter;
+
+            let filter = EnvFilter::builder()
+                .with_default_directive(Level::DEBUG.into())
+                .from_env_lossy();
+            tracing_subscriber::fmt().with_env_filter(filter).init();
         }
     }
 
-    let event_loop = EventLoop::new().unwrap();
-    let window = WindowBuilder::new().build(&event_loop).unwrap();
+    let event_loop = EventLoop::new()?;
+    let mut app = App::default();
 
-    #[cfg(target_arch = "wasm32")]
-    {
-        // Winit prevents sizing with CSS, so we have to set
-        // the size manually when on web.
-        use winit::dpi::PhysicalSize;
-        let _ = window.request_inner_size(PhysicalSize::new(450, 400));
-
-        use winit::platform::web::WindowExtWebSys;
-        web_sys::window()
-            .and_then(|win| win.document())
-            .and_then(|doc| {
-                let dst = doc.get_element_by_id("wasm-example")?;
-                let canvas = web_sys::Element::from(window.canvas()?);
-                dst.append_child(&canvas).ok()?;
-                Some(())
-            })
-            .expect("Couldn't append canvas to document body.");
-    }
-
-    event_loop
-        .run(move |event, control_flow| match event {
-            Event::Resumed => {
-                log::debug!("Resumed");
-            }
-            Event::WindowEvent {
-                ref event,
-                window_id,
-            } if window_id == window.id() => match event {
-                WindowEvent::CloseRequested
-                | WindowEvent::KeyboardInput {
-                    event:
-                        KeyEvent {
-                            state: ElementState::Pressed,
-                            physical_key: PhysicalKey::Code(KeyCode::Escape),
-                            ..
-                        },
-                    ..
-                } => control_flow.exit(),
-                _ => {}
-            },
-            _ => {}
-        })
-        .unwrap();
+    event_loop.run_app(&mut app)?;
+    Ok(())
 }

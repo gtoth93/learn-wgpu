@@ -2,7 +2,7 @@
 name = "tutorial1-window"
 version = "0.1.0"
 authors = ["Ben Hansen <https://github.com/sotrh>"]
-edition = "2018"
+edition = "2021"
 
 [lib]
 crate-type = ["cdylib", "rlib"]
@@ -12,21 +12,18 @@ name = "tutorial1-window"
 path = "src/main.rs"
 
 [dependencies]
-cfg-if = "1"
-winit = { version = "0.29", features = ["rwh_05"] }
-env_logger = "0.10"
-log = "0.4"
-wgpu = "0.19"
-pollster = "0.3"
+anyhow = "1.0"
+cfg-if = "1.0"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+winit = "0.30"
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
-console_error_panic_hook = "0.1.6"
-console_log = "1.0"
-wgpu = { version = "0.19", features = ["webgl"]}
+console_error_panic_hook = "0.1"
+tracing-web = "0.1"
 wasm-bindgen = "0.2"
-wasm-bindgen-futures = "0.4.30"
-web-sys = { version = "0.3.69", features = [
+web-sys = { version = "0.3", features = [
     "Document",
     "Window",
     "Element",
-]}
+] }

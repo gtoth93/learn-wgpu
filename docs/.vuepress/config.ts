@@ -90,6 +90,7 @@ const bundlerOptions: ViteBundlerOptions = {
         ]
     }
 };
+
 const userConfig: UserConfig = {
     lang: 'en-US',
     title: 'Learn Wgpu',
@@ -104,4 +105,5 @@ const userConfig: UserConfig = {
 
     bundler: viteBundler(bundlerOptions),
 };
+
 export default defineUserConfig(userConfig)

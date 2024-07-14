@@ -1,7 +1,4 @@
-use std::{
-    path::PathBuf,
-    process::{Command, ExitStatus},
-};
+use std::{path::PathBuf, process::Command};
 
 use anyhow::bail;
 use rayon::prelude::{IntoParallelRefIterator, ParallelIterator};
@@ -14,14 +11,11 @@ struct WasmTarget {
 }
 
 fn main() -> anyhow::Result<()> {
-    env_logger::init();
+    tracing_subscriber::fmt().init();
 
-    let input = match std::env::args().skip(1).next() {
-        Some(s) => s,
-        None => {
-            log::info!("No input file supplied");
-            std::process::exit(1);
-        }
+    let Some(input) = std::env::args().nth(1) else {
+        tracing::info!("No input file supplied");
+        std::process::exit(1);
     };
 
     let json = std::fs::read_to_string(input)?;
@@ -65,20 +59,20 @@ fn main() -> anyhow::Result<()> {
                 .out_name("demo")
                 .generate(path)
         })
-        .filter_map(|r| r.err())
+        .filter_map(Result::err)
         .collect::<Vec<_>>();
 
     if !errors.is_empty() {
         for error in &errors {
-            log::error!("{}", error);
+            tracing::error!("{}", error);
         }
-        log::error!("Encountered {} error(s)", errors.len());
+        tracing::error!("Encountered {} error(s)", errors.len());
         std::process::exit(1);
     }
 
-    let time_taken = std::time::Instant::now() - start_time;
-    log::info!(
-        "Success fully processed {} target(s) in {:?}",
+    let time_taken = start_time.elapsed();
+    tracing::info!(
+        "Successfully processed {} target(s) in {:?}",
         targets.len(),
         time_taken
     );
