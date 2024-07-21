@@ -1,5 +1,6 @@
 use anyhow::Result;
 use tracing::Level;
+use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, EnvFilter};
 use winit::{
     application::ApplicationHandler,
     event::{ElementState, KeyEvent, WindowEvent},
@@ -15,25 +16,30 @@ struct App {
 
 impl ApplicationHandler for App {
     fn resumed(&mut self, event_loop: &ActiveEventLoop) {
-        tracing::debug!("Resumed");
+        tracing::info!("Resumed");
+        let window_attrs = Window::default_attributes();
         let window = event_loop
-            .create_window(Window::default_attributes())
+            .create_window(window_attrs)
             .expect("Couldn't create window.");
 
         #[cfg(target_arch = "wasm32")]
         {
+            use web_sys::Element;
             use winit::{dpi::PhysicalSize, platform::web::WindowExtWebSys};
 
-            let _ = window.request_inner_size(PhysicalSize::new(450, 400));
             web_sys::window()
                 .and_then(|win| win.document())
                 .and_then(|doc| {
                     let dst = doc.get_element_by_id("wasm-example")?;
-                    let canvas = web_sys::Element::from(window.canvas()?);
+                    let canvas = Element::from(window.canvas()?);
                     dst.append_child(&canvas).ok()?;
                     Some(())
                 })
                 .expect("Couldn't append canvas to document body.");
+
+            // Winit prevents sizing with CSS, so we have to set
+            // the size manually when on web.
+            let _ = window.request_inner_size(PhysicalSize::new(450, 400));
         }
 
         self.window = Some(window);
@@ -61,33 +67,34 @@ impl ApplicationHandler for App {
                         ..
                     },
                 ..
-            } => event_loop.exit(),
+            } => {
+                tracing::info!("Exited!");
+                event_loop.exit()
+            }
             _ => {}
         }
     }
 }
 
 pub fn run() -> Result<()> {
-    cfg_if::cfg_if! {
-        if #[cfg(target_arch = "wasm32")] {
-            use tracing_subscriber::{
-                fmt::writer::MakeWriterExt, layer::SubscriberExt, util::SubscriberInitExt,
-            };
+    let env_filter = EnvFilter::builder()
+        .with_default_directive(Level::INFO.into())
+        .from_env_lossy()
+        .add_directive("wgpu_core::device::resource=warn".parse()?);
+    let subscriber = tracing_subscriber::registry().with(env_filter);
+    #[cfg(target_arch = "wasm32")]
+    {
+        use tracing_wasm::{WASMLayer, WASMLayerConfig};
 
-            console_error_panic_hook::set_once();
-            let layer = tracing_subscriber::fmt::layer()
-                .with_ansi(false)
-                .without_time()
-                .with_writer(tracing_web::MakeWebConsoleWriter::new().with_max_level(Level::DEBUG));
-            tracing_subscriber::registry().with(layer).init();
-        } else {
-            use tracing_subscriber::EnvFilter;
+        console_error_panic_hook::set_once();
+        let wasm_layer = WASMLayer::new(WASMLayerConfig::default());
 
-            let filter = EnvFilter::builder()
-                .with_default_directive(Level::DEBUG.into())
-                .from_env_lossy();
-            tracing_subscriber::fmt().with_env_filter(filter).init();
-        }
+        subscriber.with(wasm_layer).init();
+    }
+    #[cfg(not(target_arch = "wasm32"))]
+    {
+        let fmt_layer = tracing_subscriber::fmt::Layer::default();
+        subscriber.with(fmt_layer).init();
     }
 
     let event_loop = EventLoop::new()?;
