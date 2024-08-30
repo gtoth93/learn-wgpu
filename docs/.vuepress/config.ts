@@ -65,6 +65,7 @@ const themeOptions: DefaultThemeOptions = {
             text: 'News',
             collapsible: true,
             children: [
+                '/news/22.0/',
                 '/news/0.18 and hdr/',
                 '/news/0.17/',
                 '/news/0.16/',
