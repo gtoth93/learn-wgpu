@@ -76,7 +76,7 @@ impl ApplicationHandler for App {
     }
 }
 
-pub fn run() -> Result<()> {
+fn init_tracing_subscriber() -> Result<()> {
     let env_filter = EnvFilter::builder()
         .with_default_directive(Level::INFO.into())
         .from_env_lossy()
@@ -96,6 +96,11 @@ pub fn run() -> Result<()> {
         let fmt_layer = tracing_subscriber::fmt::Layer::default();
         subscriber.with(fmt_layer).init();
     }
+    Ok(())
+}
+
+pub fn run() -> Result<()> {
+    init_tracing_subscriber()?;
 
     let event_loop = EventLoop::new()?;
     let mut app = App::default();

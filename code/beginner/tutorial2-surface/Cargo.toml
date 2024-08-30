@@ -2,30 +2,10 @@
 name = "tutorial2-surface"
 version = "0.1.0"
 authors = ["Ben Hansen <https://github.com/sotrh>"]
-edition = "2018"
+edition = "2021"
 
 [lib]
 crate-type = ["cdylib", "rlib"]
-
-[dependencies]
-cfg-if = "1"
-winit = { version = "0.29", features = ["rwh_05"] }
-env_logger = "0.10"
-log = "0.4"
-wgpu = "0.19.3"
-pollster = "0.3"
-
-[target.'cfg(target_arch = "wasm32")'.dependencies]
-console_error_panic_hook = "0.1.6"
-console_log = "1.0"
-wgpu = { version = "0.19", features = ["webgl"]}
-wasm-bindgen = "0.2"
-wasm-bindgen-futures = "0.4"
-web-sys = { version = "0.3", features = [
-    "Document",
-    "Window",
-    "Element",
-]}
 
 [[bin]]
 name = "tutorial2-surface"
@@ -34,3 +14,21 @@ path = "src/main.rs"
 [[bin]]
 name = "tutorial2-challenge"
 path = "src/challenge.rs"
+
+[dependencies]
+anyhow = "1.0"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+wgpu = "22"
+winit = "0.30"
+
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+pollster = "0.3"
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+console_error_panic_hook = "0.1"
+tracing-wasm = "0.2"
+wasm-bindgen = "0.2"
+wasm-bindgen-futures = "0.4"
+web-sys = { version = "0.3", features = ["Document", "Element", "Window"] }
+wgpu = { version = "22", features = ["webgl"] }
