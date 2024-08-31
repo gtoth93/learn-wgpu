@@ -1,5 +1,6 @@
-use tutorial3_pipeline::run;
+use anyhow::Result;
 
-fn main() {
-    pollster::block_on(run());
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen::prelude::wasm_bindgen(main))]
+fn main() -> Result<()> {
+    tutorial3_pipeline::run()
 }
