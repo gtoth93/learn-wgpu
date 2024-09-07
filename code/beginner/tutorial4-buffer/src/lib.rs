@@ -1,223 +1,238 @@
-use std::iter;
+#![warn(clippy::pedantic)]
 
-use wgpu::util::DeviceExt;
-use winit::{
-    event::*,
-    event_loop::EventLoop,
-    keyboard::{KeyCode, PhysicalKey},
-    window::{Window, WindowBuilder},
+use std::sync::Arc;
+
+use anyhow::Result;
+use tracing::Level;
+use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, EnvFilter};
+use wgpu::{
+    util::{BufferInitDescriptor, DeviceExt},
+    Backends, BlendState, Buffer, BufferAddress, BufferUsages, Color, ColorTargetState,
+    ColorWrites, CommandEncoderDescriptor, Device, DeviceDescriptor, Face, Features, FragmentState,
+    FrontFace, IndexFormat, Instance, InstanceDescriptor, Limits, LoadOp, MemoryHints,
+    MultisampleState, Operations, PipelineCompilationOptions, PipelineLayoutDescriptor,
+    PolygonMode, PowerPreference, PrimitiveState, PrimitiveTopology, Queue,
+    RenderPassColorAttachment, RenderPassDescriptor, RenderPipeline, RenderPipelineDescriptor,
+    RequestAdapterOptions, StoreOp, Surface, SurfaceConfiguration, SurfaceError, TextureFormat,
+    TextureUsages, TextureViewDescriptor, VertexAttribute, VertexBufferLayout, VertexState,
+    VertexStepMode,
 };
-
-#[cfg(target_arch = "wasm32")]
-use wasm_bindgen::prelude::*;
+use winit::{
+    application::ApplicationHandler,
+    dpi::PhysicalSize,
+    event::{ElementState, KeyEvent, WindowEvent},
+    event_loop::{ActiveEventLoop, EventLoop, EventLoopProxy},
+    keyboard::{KeyCode, PhysicalKey},
+    window::{Window, WindowId},
+};
+use zerocopy::AsBytes;
 
 #[repr(C)]
-#[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
+#[derive(AsBytes, Clone, Copy, Debug)]
 struct Vertex {
     position: [f32; 3],
     color: [f32; 3],
 }
 
 impl Vertex {
-    fn desc() -> wgpu::VertexBufferLayout<'static> {
-        wgpu::VertexBufferLayout {
-            array_stride: std::mem::size_of::<Vertex>() as wgpu::BufferAddress,
-            step_mode: wgpu::VertexStepMode::Vertex,
-            attributes: &[
-                wgpu::VertexAttribute {
-                    offset: 0,
-                    shader_location: 0,
-                    format: wgpu::VertexFormat::Float32x3,
-                },
-                wgpu::VertexAttribute {
-                    offset: std::mem::size_of::<[f32; 3]>() as wgpu::BufferAddress,
-                    shader_location: 1,
-                    format: wgpu::VertexFormat::Float32x3,
-                },
-            ],
+    const ATTRIBS: [VertexAttribute; 2] = wgpu::vertex_attr_array![0 => Float32x3, 1 => Float32x3];
+
+    fn desc() -> VertexBufferLayout<'static> {
+        VertexBufferLayout {
+            array_stride: size_of::<Self>() as BufferAddress,
+            step_mode: VertexStepMode::Vertex,
+            attributes: &Self::ATTRIBS,
         }
     }
 }
 
 const VERTICES: &[Vertex] = &[
     Vertex {
-        position: [-0.0868241, 0.49240386, 0.0],
+        position: [-0.086_824_1, 0.492_403_86, 0.0],
         color: [0.5, 0.0, 0.5],
     }, // A
     Vertex {
-        position: [-0.49513406, 0.06958647, 0.0],
+        position: [-0.495_134_06, 0.069_586_47, 0.0],
         color: [0.5, 0.0, 0.5],
     }, // B
     Vertex {
-        position: [-0.21918549, -0.44939706, 0.0],
+        position: [-0.219_185_49, -0.449_397_06, 0.0],
         color: [0.5, 0.0, 0.5],
     }, // C
     Vertex {
-        position: [0.35966998, -0.3473291, 0.0],
+        position: [0.359_669_98, -0.347_329_1, 0.0],
         color: [0.5, 0.0, 0.5],
     }, // D
     Vertex {
-        position: [0.44147372, 0.2347359, 0.0],
+        position: [0.441_473_72, 0.234_735_9, 0.0],
         color: [0.5, 0.0, 0.5],
     }, // E
 ];
 
 const INDICES: &[u16] = &[0, 1, 4, 1, 2, 4, 2, 3, 4, /* padding */ 0];
 
-struct State<'a> {
-    surface: wgpu::Surface<'a>,
-    device: wgpu::Device,
-    queue: wgpu::Queue,
-    config: wgpu::SurfaceConfiguration,
-    size: winit::dpi::PhysicalSize<u32>,
-    render_pipeline: wgpu::RenderPipeline,
+struct State {
+    surface: Surface<'static>,
+    device: Device,
+    queue: Queue,
+    config: SurfaceConfiguration,
+    size: PhysicalSize<u32>,
+    window: Arc<Window>,
+    surface_configured: bool,
+    render_pipeline: RenderPipeline,
     // NEW!
-    vertex_buffer: wgpu::Buffer,
-    index_buffer: wgpu::Buffer,
+    vertex_buffer: Buffer,
+    index_buffer: Buffer,
     num_indices: u32,
-    window: &'a Window,
 }
 
-impl<'a> State<'a> {
-    async fn new(window: &'a Window) -> State<'a> {
+impl State {
+    #[allow(clippy::too_many_lines)]
+    async fn new(window: Arc<Window>) -> State {
         let size = window.inner_size();
 
         // The instance is a handle to our GPU
         // BackendBit::PRIMARY => Vulkan + Metal + DX12 + Browser WebGPU
-        let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
-            #[cfg(not(target_arch = "wasm32"))]
-            backends: wgpu::Backends::PRIMARY,
-            #[cfg(target_arch = "wasm32")]
-            backends: wgpu::Backends::GL,
+        let instance_desc = InstanceDescriptor {
+            backends: if cfg!(not(target_arch = "wasm32")) {
+                Backends::PRIMARY
+            } else {
+                Backends::GL
+            },
             ..Default::default()
-        });
+        };
+        let instance = Instance::new(instance_desc);
 
-        // # Safety
-        //
-        // The surface needs to live as long as the window that created it.
-        // State owns the window so this should be safe.
-        let surface = instance.create_surface(window).unwrap();
+        let surface = instance.create_surface(window.clone()).unwrap();
 
         let adapter = instance
-            .request_adapter(&wgpu::RequestAdapterOptions {
-                power_preference: wgpu::PowerPreference::default(),
+            .request_adapter(&RequestAdapterOptions {
+                power_preference: PowerPreference::default(),
                 compatible_surface: Some(&surface),
                 force_fallback_adapter: false,
             })
             .await
             .unwrap();
 
-        let (device, queue) = adapter
-            .request_device(
-                &wgpu::DeviceDescriptor {
-                    label: None,
-                    required_features: wgpu::Features::empty(),
-                    // WebGL doesn't support all of wgpu's features, so if
-                    // we're building for the web we'll have to disable some.
-                    required_limits: if cfg!(target_arch = "wasm32") {
-                        wgpu::Limits::downlevel_webgl2_defaults()
-                    } else {
-                        wgpu::Limits::default()
-                    },
-                    memory_hints: Default::default(),
-                },
-                None, // Trace path
-            )
-            .await
-            .unwrap();
+        let device_desc = DeviceDescriptor {
+            label: None,
+            required_features: Features::empty(),
+            // WebGL doesn't support all of wgpu's features, so if
+            // we're building for the web, we'll have to disable some.
+            required_limits: if cfg!(target_arch = "wasm32") {
+                Limits::downlevel_webgl2_defaults()
+            } else {
+                Limits::default()
+            },
+            memory_hints: MemoryHints::default(),
+        };
+        let (device, queue) = adapter.request_device(&device_desc, None).await.unwrap();
 
         let surface_caps = surface.get_capabilities(&adapter);
         // Shader code in this tutorial assumes an Srgb surface texture. Using a different
-        // one will result all the colors comming out darker. If you want to support non
+        // one will result in all the colors coming out darker. If you want to support non
         // Srgb surfaces, you'll need to account for that when drawing to the frame.
         let surface_format = surface_caps
             .formats
             .iter()
             .copied()
-            .find(|f| f.is_srgb())
+            .find(TextureFormat::is_srgb)
             .unwrap_or(surface_caps.formats[0]);
-        let config = wgpu::SurfaceConfiguration {
-            usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
+        let config = SurfaceConfiguration {
+            usage: TextureUsages::RENDER_ATTACHMENT,
             format: surface_format,
             width: size.width,
             height: size.height,
             present_mode: surface_caps.present_modes[0],
             alpha_mode: surface_caps.alpha_modes[0],
-            view_formats: vec![],
             desired_maximum_frame_latency: 2,
+            view_formats: vec![],
         };
 
-        let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
-            label: Some("Shader"),
-            source: wgpu::ShaderSource::Wgsl(include_str!("shader.wgsl").into()),
-        });
+        let surface_configured;
+        #[cfg(not(target_arch = "wasm32"))]
+        {
+            surface.configure(&device, &config);
+            surface_configured = true;
+        }
+        #[cfg(target_arch = "wasm32")]
+        {
+            surface_configured = false;
+        }
 
-        let render_pipeline_layout =
-            device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-                label: Some("Render Pipeline Layout"),
-                bind_group_layouts: &[],
-                push_constant_ranges: &[],
-            });
+        let shader = device.create_shader_module(wgpu::include_wgsl!("shader.wgsl"));
 
-        let render_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+        let pipeline_layout_desc = PipelineLayoutDescriptor {
+            label: Some("Render Pipeline Layout"),
+            bind_group_layouts: &[],
+            push_constant_ranges: &[],
+        };
+        let pipeline_layout = device.create_pipeline_layout(&pipeline_layout_desc);
+
+        let color_target_state = ColorTargetState {
+            format: config.format,
+            blend: Some(BlendState::REPLACE),
+            write_mask: ColorWrites::ALL,
+        };
+        let fragment_state = FragmentState {
+            module: &shader,
+            entry_point: "fs_main",
+            targets: &[Some(color_target_state)],
+            compilation_options: PipelineCompilationOptions::default(),
+        };
+        let render_pipeline_desc = RenderPipelineDescriptor {
             label: Some("Render Pipeline"),
-            layout: Some(&render_pipeline_layout),
-            vertex: wgpu::VertexState {
+            layout: Some(&pipeline_layout),
+            vertex: VertexState {
                 module: &shader,
                 entry_point: "vs_main",
                 buffers: &[Vertex::desc()],
-                compilation_options: Default::default(),
+                compilation_options: PipelineCompilationOptions::default(),
             },
-            fragment: Some(wgpu::FragmentState {
-                module: &shader,
-                entry_point: "fs_main",
-                targets: &[Some(wgpu::ColorTargetState {
-                    format: config.format,
-                    blend: Some(wgpu::BlendState {
-                        color: wgpu::BlendComponent::REPLACE,
-                        alpha: wgpu::BlendComponent::REPLACE,
-                    }),
-                    write_mask: wgpu::ColorWrites::ALL,
-                })],
-                compilation_options: Default::default(),
-            }),
-            primitive: wgpu::PrimitiveState {
-                topology: wgpu::PrimitiveTopology::TriangleList,
+            fragment: Some(fragment_state),
+            primitive: PrimitiveState {
+                topology: PrimitiveTopology::TriangleList,
                 strip_index_format: None,
-                front_face: wgpu::FrontFace::Ccw,
-                cull_mode: Some(wgpu::Face::Back),
+                front_face: FrontFace::Ccw,
+                cull_mode: Some(Face::Back),
                 // Setting this to anything other than Fill requires Features::POLYGON_MODE_LINE
                 // or Features::POLYGON_MODE_POINT
-                polygon_mode: wgpu::PolygonMode::Fill,
+                polygon_mode: PolygonMode::Fill,
                 // Requires Features::DEPTH_CLIP_CONTROL
                 unclipped_depth: false,
                 // Requires Features::CONSERVATIVE_RASTERIZATION
                 conservative: false,
             },
             depth_stencil: None,
-            multisample: wgpu::MultisampleState {
+            multisample: MultisampleState {
                 count: 1,
                 mask: !0,
                 alpha_to_coverage_enabled: false,
             },
-            // If the pipeline will be used with a multiview render pass, this
+            // If the pipeline is used with a multiview render pass, this
             // indicates how many array layers the attachments will have.
             multiview: None,
             // Useful for optimizing shader compilation on Android
             cache: None,
-        });
+        };
+        let render_pipeline = device.create_render_pipeline(&render_pipeline_desc);
 
-        let vertex_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+        // NEW!
+        let vertex_buffer_desc = BufferInitDescriptor {
             label: Some("Vertex Buffer"),
-            contents: bytemuck::cast_slice(VERTICES),
-            usage: wgpu::BufferUsages::VERTEX,
-        });
-        let index_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            contents: VERTICES.as_bytes(),
+            usage: BufferUsages::VERTEX,
+        };
+        let vertex_buffer = device.create_buffer_init(&vertex_buffer_desc);
+
+        let index_buffer_desc = BufferInitDescriptor {
             label: Some("Index Buffer"),
-            contents: bytemuck::cast_slice(INDICES),
-            usage: wgpu::BufferUsages::INDEX,
-        });
-        let num_indices = INDICES.len() as u32;
+            contents: INDICES.as_bytes(),
+            usage: BufferUsages::INDEX,
+        };
+        let index_buffer = device.create_buffer_init(&index_buffer_desc);
+
+        let num_indices = INDICES.len().try_into().unwrap();
 
         Self {
             surface,
@@ -225,19 +240,17 @@ impl<'a> State<'a> {
             queue,
             config,
             size,
+            window,
+            surface_configured,
             render_pipeline,
+            // NEW!
             vertex_buffer,
             index_buffer,
             num_indices,
-            window,
         }
     }
 
-    pub fn window(&self) -> &Window {
-        &self.window
-    }
-
-    pub fn resize(&mut self, new_size: winit::dpi::PhysicalSize<u32>) {
+    pub fn resize(&mut self, new_size: PhysicalSize<u32>) {
         if new_size.width > 0 && new_size.height > 0 {
             self.size = new_size;
             self.config.width = new_size.width;
@@ -246,152 +259,258 @@ impl<'a> State<'a> {
         }
     }
 
-    #[allow(unused_variables)]
-    fn input(&mut self, event: &WindowEvent) -> bool {
+    #[allow(clippy::unused_self)]
+    fn input(&mut self, _: &WindowEvent) -> bool {
         false
     }
 
+    #[allow(clippy::unused_self)]
     fn update(&mut self) {}
 
-    fn render(&mut self) -> Result<(), wgpu::SurfaceError> {
+    fn render(&mut self) -> Result<(), SurfaceError> {
         let output = self.surface.get_current_texture()?;
         let view = output
             .texture
-            .create_view(&wgpu::TextureViewDescriptor::default());
+            .create_view(&TextureViewDescriptor::default());
 
         let mut encoder = self
             .device
-            .create_command_encoder(&wgpu::CommandEncoderDescriptor {
+            .create_command_encoder(&CommandEncoderDescriptor {
                 label: Some("Render Encoder"),
             });
 
         {
-            let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+            let clear_color = Color {
+                r: 0.1,
+                g: 0.2,
+                b: 0.3,
+                a: 1.0,
+            };
+            // This is what @location(0) in the fragment shader targets
+            let color_attachment = RenderPassColorAttachment {
+                view: &view,
+                resolve_target: None,
+                ops: Operations {
+                    load: LoadOp::Clear(clear_color),
+                    store: StoreOp::Store,
+                },
+            };
+            let render_pass_desc = RenderPassDescriptor {
                 label: Some("Render Pass"),
-                color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                    view: &view,
-                    resolve_target: None,
-                    ops: wgpu::Operations {
-                        load: wgpu::LoadOp::Clear(wgpu::Color {
-                            r: 0.1,
-                            g: 0.2,
-                            b: 0.3,
-                            a: 1.0,
-                        }),
-                        store: wgpu::StoreOp::Store,
-                    },
-                })],
+                color_attachments: &[Some(color_attachment)],
                 depth_stencil_attachment: None,
                 occlusion_query_set: None,
                 timestamp_writes: None,
-            });
+            };
+            let mut render_pass = encoder.begin_render_pass(&render_pass_desc);
 
             render_pass.set_pipeline(&self.render_pipeline);
+            // NEW!
             render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
-            render_pass.set_index_buffer(self.index_buffer.slice(..), wgpu::IndexFormat::Uint16);
+            render_pass.set_index_buffer(self.index_buffer.slice(..), IndexFormat::Uint16);
             render_pass.draw_indexed(0..self.num_indices, 0, 0..1);
         }
 
-        self.queue.submit(iter::once(encoder.finish()));
+        self.queue.submit(std::iter::once(encoder.finish()));
         output.present();
 
         Ok(())
     }
 }
 
-#[cfg_attr(target_arch = "wasm32", wasm_bindgen(start))]
-pub async fn run() {
-    cfg_if::cfg_if! {
-        if #[cfg(target_arch = "wasm32")] {
-            std::panic::set_hook(Box::new(console_error_panic_hook::hook));
-            console_log::init_with_level(log::Level::Warn).expect("Could't initialize logger");
-        } else {
-            env_logger::init();
+enum UserEvent {
+    StateReady(State),
+}
+
+struct App {
+    state: Option<State>,
+    event_loop_proxy: EventLoopProxy<UserEvent>,
+}
+
+impl App {
+    fn new(event_loop: &EventLoop<UserEvent>) -> Self {
+        Self {
+            state: None,
+            event_loop_proxy: event_loop.create_proxy(),
+        }
+    }
+}
+
+impl ApplicationHandler<UserEvent> for App {
+    fn resumed(&mut self, event_loop: &ActiveEventLoop) {
+        tracing::info!("Resumed");
+        let window_attrs = Window::default_attributes();
+        let window = event_loop
+            .create_window(window_attrs)
+            .expect("Couldn't create window.");
+
+        #[cfg(target_arch = "wasm32")]
+        {
+            use web_sys::Element;
+            use winit::platform::web::WindowExtWebSys;
+
+            web_sys::window()
+                .and_then(|win| win.document())
+                .and_then(|doc| {
+                    let dst = doc.get_element_by_id("wasm-example")?;
+                    let canvas = Element::from(window.canvas()?);
+                    dst.append_child(&canvas).ok()?;
+                    Some(())
+                })
+                .expect("Couldn't append canvas to document body.");
+
+            // Winit prevents sizing with CSS, so we have to set
+            // the size manually when on a web target.
+            let _ = window.request_inner_size(PhysicalSize::new(450, 400));
+
+            let state_future = State::new(Arc::new(window));
+            let event_loop_proxy = self.event_loop_proxy.clone();
+            let future = async move {
+                let state = state_future.await;
+                assert!(event_loop_proxy
+                    .send_event(UserEvent::StateReady(state))
+                    .is_ok());
+            };
+            wasm_bindgen_futures::spawn_local(future)
+        }
+        #[cfg(not(target_arch = "wasm32"))]
+        {
+            let state = pollster::block_on(State::new(Arc::new(window)));
+            assert!(self
+                .event_loop_proxy
+                .send_event(UserEvent::StateReady(state))
+                .is_ok());
         }
     }
 
-    let event_loop = EventLoop::new().unwrap();
-    let window = WindowBuilder::new().build(&event_loop).unwrap();
-
-    #[cfg(target_arch = "wasm32")]
-    {
-        // Winit prevents sizing with CSS, so we have to set
-        // the size manually when on web.
-        use winit::dpi::PhysicalSize;
-        let _ = window.request_inner_size(PhysicalSize::new(450, 400));
-
-        use winit::platform::web::WindowExtWebSys;
-        web_sys::window()
-            .and_then(|win| win.document())
-            .and_then(|doc| {
-                let dst = doc.get_element_by_id("wasm-example")?;
-                let canvas = web_sys::Element::from(window.canvas()?);
-                dst.append_child(&canvas).ok()?;
-                Some(())
-            })
-            .expect("Couldn't append canvas to document body.");
+    fn user_event(&mut self, _: &ActiveEventLoop, event: UserEvent) {
+        let UserEvent::StateReady(state) = event;
+        self.state = Some(state);
     }
 
-    // State::new uses async code, so we're going to wait for it to finish
-    let mut state = State::new(&window).await;
-    let mut surface_configured = false;
+    fn window_event(
+        &mut self,
+        event_loop: &ActiveEventLoop,
+        window_id: WindowId,
+        event: WindowEvent,
+    ) {
+        let Some(ref mut state) = self.state else {
+            return;
+        };
 
-    event_loop
-        .run(move |event, control_flow| {
-            match event {
-                Event::WindowEvent {
-                    ref event,
-                    window_id,
-                } if window_id == state.window().id() => {
-                    if !state.input(event) {
-                        match event {
-                            WindowEvent::CloseRequested
-                            | WindowEvent::KeyboardInput {
-                                event:
-                                    KeyEvent {
-                                        state: ElementState::Pressed,
-                                        physical_key: PhysicalKey::Code(KeyCode::Escape),
-                                        ..
-                                    },
-                                ..
-                            } => control_flow.exit(),
-                            WindowEvent::Resized(physical_size) => {
-                                surface_configured = true;
-                                state.resize(*physical_size);
-                            }
-                            WindowEvent::RedrawRequested => {
-                                // This tells winit that we want another frame after this one
-                                state.window().request_redraw();
+        if window_id != state.window.id() {
+            return;
+        }
 
-                                if !surface_configured {
-                                    return;
-                                }
+        if state.input(&event) {
+            return;
+        }
 
-                                state.update();
-                                match state.render() {
-                                    Ok(_) => {}
-                                    // Reconfigure the surface if it's lost or outdated
-                                    Err(
-                                        wgpu::SurfaceError::Lost | wgpu::SurfaceError::Outdated,
-                                    ) => state.resize(state.size),
-                                    // The system is out of memory, we should probably quit
-                                    Err(wgpu::SurfaceError::OutOfMemory) => {
-                                        log::error!("OutOfMemory");
-                                        control_flow.exit();
-                                    }
+        match event {
+            WindowEvent::CloseRequested
+            | WindowEvent::KeyboardInput {
+                event:
+                    KeyEvent {
+                        state: ElementState::Pressed,
+                        physical_key: PhysicalKey::Code(KeyCode::Escape),
+                        ..
+                    },
+                ..
+            } => {
+                tracing::info!("Exited!");
+                event_loop.exit();
+            }
+            WindowEvent::Resized(physical_size) => {
+                tracing::info!("physical_size: {physical_size:?}");
+                state.surface_configured = true;
+                state.resize(physical_size);
+            }
+            WindowEvent::RedrawRequested => {
+                if !state.surface_configured {
+                    return;
+                }
+                state.update();
+                match state.render() {
+                    Ok(()) => {}
+                    // Reconfigure the surface if it's lost or outdated
+                    Err(SurfaceError::Lost | SurfaceError::Outdated) => {
+                        state.resize(state.size);
+                    }
+                    // The system is out of memory, we should probably quit
+                    Err(SurfaceError::OutOfMemory) => {
+                        tracing::error!("OutOfMemory");
+                        event_loop.exit();
+                    }
 
-                                    // This happens when the a frame takes too long to present
-                                    Err(wgpu::SurfaceError::Timeout) => {
-                                        log::warn!("Surface timeout")
-                                    }
-                                }
-                            }
-                            _ => {}
-                        }
+                    // This happens when the frame takes too long to present
+                    Err(SurfaceError::Timeout) => {
+                        tracing::warn!("Surface timeout");
                     }
                 }
-                _ => {}
             }
-        })
-        .unwrap();
+            _ => {}
+        }
+    }
+
+    fn about_to_wait(&mut self, _: &ActiveEventLoop) {
+        if let Some(ref state) = self.state {
+            state.window.request_redraw();
+        };
+    }
+}
+
+fn init_tracing_subscriber() -> Result<()> {
+    #[allow(unused_mut)]
+    let mut env_filter = EnvFilter::builder()
+        .with_default_directive(Level::INFO.into())
+        .from_env_lossy()
+        .add_directive("wgpu_core::device::resource=warn".parse()?);
+
+    #[cfg(debug_assertions)]
+    {
+        env_filter = env_filter.add_directive("wgpu_hal::auxil::dxgi::exception=off".parse()?);
+    }
+
+    let subscriber = tracing_subscriber::registry().with(env_filter);
+    #[cfg(target_arch = "wasm32")]
+    {
+        use tracing_wasm::{WASMLayer, WASMLayerConfig};
+
+        console_error_panic_hook::set_once();
+        let wasm_layer = WASMLayer::new(WASMLayerConfig::default());
+
+        subscriber.with(wasm_layer).init();
+    }
+    #[cfg(not(target_arch = "wasm32"))]
+    {
+        use tracing_subscriber::fmt::Layer;
+
+        let fmt_layer = Layer::default();
+        subscriber.with(fmt_layer).init();
+    }
+    Ok(())
+}
+
+/// Runs the application.
+///
+/// # Errors
+/// The event loop can return an error if the event loop creation fails or if the application has
+/// exited with an error status. These errors are propagated to the caller.
+#[allow(unused_mut)]
+pub fn run() -> Result<()> {
+    init_tracing_subscriber()?;
+
+    let event_loop = EventLoop::<UserEvent>::with_user_event().build()?;
+    let mut app = App::new(&event_loop);
+
+    #[cfg(not(target_arch = "wasm32"))]
+    {
+        event_loop.run_app(&mut app)?;
+    }
+    #[cfg(target_arch = "wasm32")]
+    {
+        use winit::platform::web::EventLoopExtWebSys;
+        event_loop.spawn_app(app);
+    }
+    Ok(())
 }

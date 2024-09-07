@@ -1,3 +1,5 @@
+#![warn(clippy::pedantic)]
+
 use anyhow::Result;
 use tracing::Level;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, EnvFilter};
@@ -69,7 +71,7 @@ impl ApplicationHandler for App {
                 ..
             } => {
                 tracing::info!("Exited!");
-                event_loop.exit()
+                event_loop.exit();
             }
             _ => {}
         }
@@ -99,12 +101,26 @@ fn init_tracing_subscriber() -> Result<()> {
     Ok(())
 }
 
+/// Runs the application.
+///
+/// # Errors
+/// The event loop can return an error if the event loop creation fails or if the application has
+/// exited with an error status. These errors are propagated to the caller.
+#[allow(unused_mut)]
 pub fn run() -> Result<()> {
     init_tracing_subscriber()?;
 
     let event_loop = EventLoop::new()?;
     let mut app = App::default();
 
-    event_loop.run_app(&mut app)?;
+    #[cfg(not(target_arch = "wasm32"))]
+    {
+        event_loop.run_app(&mut app)?;
+    }
+    #[cfg(target_arch = "wasm32")]
+    {
+        use winit::platform::web::EventLoopExtWebSys;
+        event_loop.spawn_app(app);
+    }
     Ok(())
 }

@@ -1,3 +1,5 @@
+#![warn(clippy::pedantic)]
+
 use std::sync::Arc;
 
 use anyhow::Result;
@@ -6,11 +8,11 @@ use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, EnvFilte
 use wgpu::{
     Backends, BlendState, Color, ColorTargetState, ColorWrites, CommandEncoderDescriptor, Device,
     DeviceDescriptor, Face, Features, FragmentState, FrontFace, Instance, InstanceDescriptor,
-    Limits, LoadOp, MemoryHints, MultisampleState, Operations, PipelineLayoutDescriptor,
-    PolygonMode, PowerPreference, PrimitiveState, PrimitiveTopology, Queue,
-    RenderPassColorAttachment, RenderPassDescriptor, RenderPipeline, RenderPipelineDescriptor,
-    RequestAdapterOptions, StoreOp, Surface, SurfaceConfiguration, SurfaceError, TextureFormat,
-    TextureUsages, TextureViewDescriptor, VertexState,
+    Limits, LoadOp, MemoryHints, MultisampleState, Operations, PipelineCompilationOptions,
+    PipelineLayoutDescriptor, PolygonMode, PowerPreference, PrimitiveState, PrimitiveTopology,
+    Queue, RenderPassColorAttachment, RenderPassDescriptor, RenderPipeline,
+    RenderPipelineDescriptor, RequestAdapterOptions, StoreOp, Surface, SurfaceConfiguration,
+    SurfaceError, TextureFormat, TextureUsages, TextureViewDescriptor, VertexState,
 };
 use winit::{
     application::ApplicationHandler,
@@ -28,11 +30,13 @@ struct State {
     config: SurfaceConfiguration,
     size: PhysicalSize<u32>,
     window: Arc<Window>,
-    render_pipeline: RenderPipeline,
     surface_configured: bool,
+    // NEW!
+    render_pipeline: RenderPipeline,
 }
 
 impl State {
+    #[allow(clippy::too_many_lines)]
     async fn new(window: Arc<Window>) -> State {
         let size = window.inner_size();
 
@@ -123,7 +127,7 @@ impl State {
             module: &shader,
             entry_point: "fs_main",
             targets: &[Some(color_target_state)],
-            compilation_options: Default::default(),
+            compilation_options: PipelineCompilationOptions::default(),
         };
         let render_pipeline_desc = RenderPipelineDescriptor {
             label: Some("Render Pipeline"),
@@ -132,7 +136,7 @@ impl State {
                 module: &shader,
                 entry_point: "vs_main",
                 buffers: &[],
-                compilation_options: Default::default(),
+                compilation_options: PipelineCompilationOptions::default(),
             },
             fragment: Some(fragment_state),
             primitive: PrimitiveState {
@@ -169,8 +173,9 @@ impl State {
             config,
             size,
             window,
-            render_pipeline,
             surface_configured,
+            // NEW!
+            render_pipeline,
         }
     }
 
@@ -183,10 +188,12 @@ impl State {
         }
     }
 
+    #[allow(clippy::unused_self)]
     fn input(&mut self, _: &WindowEvent) -> bool {
         false
     }
 
+    #[allow(clippy::unused_self)]
     fn update(&mut self) {}
 
     fn render(&mut self) -> Result<(), SurfaceError> {
@@ -208,6 +215,7 @@ impl State {
                 b: 0.3,
                 a: 1.0,
             };
+            // This is what @location(0) in the fragment shader targets
             let color_attachment = RenderPassColorAttachment {
                 view: &view,
                 resolve_target: None,
@@ -225,6 +233,7 @@ impl State {
             };
             let mut render_pass = encoder.begin_render_pass(&render_pass_desc);
 
+            // NEW!
             render_pass.set_pipeline(&self.render_pipeline);
             render_pass.draw(0..3, 0..1);
         }
@@ -336,7 +345,7 @@ impl ApplicationHandler<UserEvent> for App {
                 ..
             } => {
                 tracing::info!("Exited!");
-                event_loop.exit()
+                event_loop.exit();
             }
             WindowEvent::Resized(physical_size) => {
                 tracing::info!("physical_size: {physical_size:?}");
@@ -409,12 +418,26 @@ fn init_tracing_subscriber() -> Result<()> {
     Ok(())
 }
 
+/// Runs the application.
+///
+/// # Errors
+/// The event loop can return an error if the event loop creation fails or if the application has
+/// exited with an error status. These errors are propagated to the caller.
+#[allow(unused_mut)]
 pub fn run() -> Result<()> {
     init_tracing_subscriber()?;
 
     let event_loop = EventLoop::<UserEvent>::with_user_event().build()?;
     let mut app = App::new(&event_loop);
 
-    event_loop.run_app(&mut app)?;
+    #[cfg(not(target_arch = "wasm32"))]
+    {
+        event_loop.run_app(&mut app)?;
+    }
+    #[cfg(target_arch = "wasm32")]
+    {
+        use winit::platform::web::EventLoopExtWebSys;
+        event_loop.spawn_app(app);
+    }
     Ok(())
 }

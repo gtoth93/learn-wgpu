@@ -2,38 +2,10 @@
 name = "tutorial4-buffer"
 version = "0.1.0"
 authors = ["Ben Hansen <https://github.com/sotrh>"]
-edition = "2018"
+edition = "2021"
 
 [lib]
 crate-type = ["cdylib", "rlib"]
-
-
-[dependencies]
-cfg-if = "1"
-winit = { version = "0.29", features = ["rwh_05"] }
-wgpu = "22.0"
-env_logger = "0.10"
-log = "0.4"
-pollster = "0.3"
-# NEW!
-bytemuck = { version = "1.16", features = [ "derive" ] }
-
-[target.'cfg(target_arch = "wasm32")'.dependencies]
-console_error_panic_hook = "0.1"
-console_log = "1.0"
-wgpu = { version = "22.0", features = ["webgl"]}
-wasm-bindgen = "0.2"
-wasm-bindgen-futures = "0.4"
-web-sys = { version = "0.3", features = [
-    "Document",
-    "Window",
-    "Element",
-]}
-
-[build-dependencies]
-anyhow = "1.0"
-fs_extra = "1.2"
-glob = "0.3"
 
 [[bin]]
 name = "tutorial4-buffer"
@@ -42,3 +14,23 @@ path = "src/main.rs"
 [[bin]]
 name = "tutorial4-challenge"
 path = "src/challenge.rs"
+
+[dependencies]
+anyhow = "1.0"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+wgpu = "22"
+winit = "0.30"
+# NEW!
+zerocopy = { version = "0.7", features = ["derive"] }
+
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+pollster = "0.3"
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+console_error_panic_hook = "0.1"
+tracing-wasm = "0.2"
+wasm-bindgen = "0.2"
+wasm-bindgen-futures = "0.4"
+web-sys = { version = "0.3", features = ["Document", "Element", "Window"] }
+wgpu = { version = "22", features = ["webgl"] }
