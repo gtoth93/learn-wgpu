@@ -1,81 +1,95 @@
-use anyhow::*;
-use image::GenericImageView;
-
+use anyhow::Result;
+use image::{DynamicImage, GenericImageView};
+use wgpu::{
+    AddressMode, Device, Extent3d, FilterMode, ImageCopyTexture, ImageDataLayout, Origin3d, Queue,
+    Sampler, SamplerDescriptor, TextureAspect, TextureDescriptor, TextureDimension, TextureFormat,
+    TextureUsages, TextureView, TextureViewDescriptor,
+};
+#[allow(clippy::struct_field_names, dead_code)]
 pub struct Texture {
-    #[allow(unused)]
     pub texture: wgpu::Texture,
-    pub view: wgpu::TextureView,
-    pub sampler: wgpu::Sampler,
+    pub view: TextureView,
+    pub sampler: Sampler,
 }
 
 impl Texture {
-    pub fn from_bytes(
-        device: &wgpu::Device,
-        queue: &wgpu::Queue,
-        bytes: &[u8],
-        label: &str,
-    ) -> Result<Self> {
+    pub fn from_bytes(device: &Device, queue: &Queue, bytes: &[u8], label: &str) -> Result<Self> {
         let img = image::load_from_memory(bytes)?;
-        Self::from_image(device, queue, &img, Some(label))
+        Ok(Self::from_image(device, queue, &img, Some(label)))
     }
 
     pub fn from_image(
-        device: &wgpu::Device,
-        queue: &wgpu::Queue,
-        img: &image::DynamicImage,
+        device: &Device,
+        queue: &Queue,
+        img: &DynamicImage,
         label: Option<&str>,
-    ) -> Result<Self> {
+    ) -> Self {
         let rgba = img.to_rgba8();
-        let dimensions = img.dimensions();
+        let (image_width, image_height) = img.dimensions();
 
-        let size = wgpu::Extent3d {
-            width: dimensions.0,
-            height: dimensions.1,
+        let size = Extent3d {
+            width: image_width,
+            height: image_height,
             depth_or_array_layers: 1,
         };
-        let format = wgpu::TextureFormat::Rgba8UnormSrgb;
-        let texture = device.create_texture(&wgpu::TextureDescriptor {
+        let texture_desc = TextureDescriptor {
             label,
+            // All textures are stored as 3D, we represent our 2D texture
+            // by setting depth to 1.
             size,
             mip_level_count: 1,
             sample_count: 1,
-            dimension: wgpu::TextureDimension::D2,
-            format,
-            usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
+            dimension: TextureDimension::D2,
+            // Most images are stored using sRGB, so we need to reflect that here.
+            format: TextureFormat::Rgba8UnormSrgb,
+            // TEXTURE_BINDING tells wgpu that we want to use this texture in shaders
+            // COPY_DST means that we want to copy data to this texture
+            usage: TextureUsages::TEXTURE_BINDING | TextureUsages::COPY_DST,
+            // This is the same as with the SurfaceConfig. It
+            // specifies what texture formats can be used to
+            // create TextureViews for this texture. The base
+            // texture format (Rgba8UnormSrgb in this case) is
+            // always supported. Note that using a different
+            // texture format is not supported on the WebGL2
+            // backend.
             view_formats: &[],
-        });
+        };
+        let texture = device.create_texture(&texture_desc);
 
         queue.write_texture(
-            wgpu::ImageCopyTexture {
-                aspect: wgpu::TextureAspect::All,
+            ImageCopyTexture {
+                aspect: TextureAspect::All,
                 texture: &texture,
                 mip_level: 0,
-                origin: wgpu::Origin3d::ZERO,
+                origin: Origin3d::ZERO,
             },
             &rgba,
-            wgpu::ImageDataLayout {
+            ImageDataLayout {
                 offset: 0,
-                bytes_per_row: Some(4 * dimensions.0),
-                rows_per_image: Some(dimensions.1),
+                bytes_per_row: Some(4 * image_width),
+                rows_per_image: Some(image_height),
             },
             size,
         );
 
-        let view = texture.create_view(&wgpu::TextureViewDescriptor::default());
-        let sampler = device.create_sampler(&wgpu::SamplerDescriptor {
-            address_mode_u: wgpu::AddressMode::ClampToEdge,
-            address_mode_v: wgpu::AddressMode::ClampToEdge,
-            address_mode_w: wgpu::AddressMode::ClampToEdge,
-            mag_filter: wgpu::FilterMode::Linear,
-            min_filter: wgpu::FilterMode::Nearest,
-            mipmap_filter: wgpu::FilterMode::Nearest,
+        // We don't need to configure the texture view much, so let's
+        // let wgpu define it.
+        let view = texture.create_view(&TextureViewDescriptor::default());
+        let sampler_desc = SamplerDescriptor {
+            address_mode_u: AddressMode::ClampToEdge,
+            address_mode_v: AddressMode::ClampToEdge,
+            address_mode_w: AddressMode::ClampToEdge,
+            mag_filter: FilterMode::Linear,
+            min_filter: FilterMode::Nearest,
+            mipmap_filter: FilterMode::Nearest,
             ..Default::default()
-        });
+        };
+        let sampler = device.create_sampler(&sampler_desc);
 
-        Ok(Self {
+        Self {
             texture,
             view,
             sampler,
-        })
+        }
     }
 }

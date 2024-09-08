@@ -11,9 +11,7 @@ struct VertexOutput {
 }
 
 @vertex
-fn vs_main(
-    model: VertexInput,
-) -> VertexOutput {
+fn vs_main(model: VertexInput) -> VertexOutput {
     var out: VertexOutput;
     out.tex_coords = model.tex_coords;
     out.clip_position = vec4<f32>(model.position, 1.0);
@@ -22,10 +20,8 @@ fn vs_main(
 
 // Fragment shader
 
-@group(0) @binding(0)
-var t_diffuse: texture_2d<f32>;
-@group(0) @binding(1)
-var s_diffuse: sampler;
+@group(0) @binding(0) var t_diffuse: texture_2d<f32>;
+@group(0) @binding(1) var s_diffuse: sampler;
 
 @fragment
 fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {

@@ -465,6 +465,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1fd0f2584146f6f2ef48085050886acf353beff7305ebd1ae69500e27c67f64b"
 
 [[package]]
+name = "byteorder-lite"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8f1fe948ff07f4bd06c30984e69f5b4899c516a3ef74f34df92a2df2ab535495"
+
+[[package]]
 name = "bytes"
 version = "1.7.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -524,12 +530,13 @@ dependencies = [
 
 [[package]]
 name = "cargo-run-wasm"
-version = "0.1.1"
+version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "504f8305a43320764724b4faddba9acc3ac94750049e8265ae3f6c338d69fdaa"
+checksum = "fa9c33bbfab116bda01ec67729b988895b34167a1e9cf034343099092421ed43"
 dependencies = [
  "devserver_lib",
  "pico-args",
+ "serde_json",
  "wasm-bindgen-cli-support",
 ]
 
@@ -666,7 +673,7 @@ dependencies = [
  "env_logger",
  "fs_extra",
  "glob",
- "image",
+ "image 0.24.9",
  "log",
  "naga 0.9.0",
  "pollster",
@@ -1044,7 +1051,7 @@ dependencies = [
  "env_logger",
  "fs_extra",
  "glob",
- "image",
+ "image 0.24.9",
  "log",
  "naga 0.9.0",
  "pollster",
@@ -1183,7 +1190,7 @@ dependencies = [
  "framework",
  "futures-intrusive",
  "gif 0.11.4",
- "image",
+ "image 0.24.9",
  "log",
  "pollster",
  "tobj 3.2.5",
@@ -1553,6 +1560,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "image"
+version = "0.25.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "99314c8a2152b8ddb211f924cdae532d8c5e4c8bb54728e12fff1b0cd5963a10"
+dependencies = [
+ "bytemuck",
+ "byteorder-lite",
+ "num-traits",
+ "png",
+]
+
+[[package]]
 name = "indexmap"
 version = "1.9.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1587,9 +1606,9 @@ dependencies = [
 
 [[package]]
 name = "ipnet"
-version = "2.9.0"
+version = "2.10.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8f518f335dce6725a761382244631d86cf0ccb2863413590b31338feb467f9c3"
+checksum = "187674a687eed5fe42285b40c6291f9a01517d415fad1c3cbc6a9f778af7fcd4"
 
 [[package]]
 name = "is-terminal"
@@ -1866,7 +1885,7 @@ dependencies = [
  "env_logger",
  "fs_extra",
  "glob",
- "image",
+ "image 0.24.9",
  "instant",
  "log",
  "pollster",
@@ -2420,9 +2439,9 @@ dependencies = [
 
 [[package]]
 name = "pico-args"
-version = "0.4.2"
+version = "0.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "db8bcd96cb740d03149cbad5518db9fd87126a10ab519c011893b1754134c468"
+checksum = "5be167a7af36ee22fe3115051bc51f6e6c7054c9348e28deb4f49bd6f705a315"
 
 [[package]]
 name = "pin-project"
@@ -3248,7 +3267,7 @@ dependencies = [
  "env_logger",
  "fs_extra",
  "glob",
- "image",
+ "image 0.24.9",
  "instant",
  "log",
  "pollster",
@@ -3543,7 +3562,7 @@ dependencies = [
  "env_logger",
  "fs_extra",
  "glob",
- "image",
+ "image 0.24.9",
  "log",
  "pollster",
  "reqwest",
@@ -3568,7 +3587,7 @@ dependencies = [
  "env_logger",
  "fs_extra",
  "glob",
- "image",
+ "image 0.24.9",
  "log",
  "pollster",
  "reqwest",
@@ -3593,7 +3612,7 @@ dependencies = [
  "env_logger",
  "fs_extra",
  "glob",
- "image",
+ "image 0.24.9",
  "instant",
  "log",
  "pollster",
@@ -3619,7 +3638,7 @@ dependencies = [
  "env_logger",
  "fs_extra",
  "glob",
- "image",
+ "image 0.24.9",
  "instant",
  "log",
  "pollster",
@@ -3645,7 +3664,7 @@ dependencies = [
  "env_logger",
  "fs_extra",
  "glob",
- "image",
+ "image 0.24.9",
  "instant",
  "log",
  "pollster",
@@ -3715,21 +3734,18 @@ name = "tutorial5-textures"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "bytemuck",
- "cfg-if",
  "console_error_panic_hook",
- "console_log",
- "env_logger",
- "fs_extra",
- "glob",
- "image",
- "log",
+ "image 0.25.2",
  "pollster",
+ "tracing",
+ "tracing-subscriber 0.3.18",
+ "tracing-wasm",
  "wasm-bindgen",
  "wasm-bindgen-futures",
  "web-sys",
  "wgpu",
- "winit 0.29.15",
+ "winit 0.30.5",
+ "zerocopy",
 ]
 
 [[package]]
@@ -3745,7 +3761,7 @@ dependencies = [
  "env_logger",
  "fs_extra",
  "glob",
- "image",
+ "image 0.24.9",
  "log",
  "pollster",
  "wasm-bindgen",
@@ -3768,7 +3784,7 @@ dependencies = [
  "env_logger",
  "fs_extra",
  "glob",
- "image",
+ "image 0.24.9",
  "log",
  "pollster",
  "wasm-bindgen",
@@ -3791,7 +3807,7 @@ dependencies = [
  "env_logger",
  "fs_extra",
  "glob",
- "image",
+ "image 0.24.9",
  "log",
  "pollster",
  "wasm-bindgen",
@@ -3814,7 +3830,7 @@ dependencies = [
  "env_logger",
  "fs_extra",
  "glob",
- "image",
+ "image 0.24.9",
  "log",
  "pollster",
  "reqwest",
@@ -4481,7 +4497,7 @@ name = "windowless"
 version = "0.1.0"
 dependencies = [
  "futures-intrusive",
- "image",
+ "image 0.24.9",
  "pollster",
  "shaderc",
  "wgpu",
