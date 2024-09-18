@@ -2,10 +2,9 @@
 
 mod texture;
 
-use std::sync::Arc;
-
 use crate::texture::Texture;
 use anyhow::Result;
+use std::sync::Arc;
 use tracing::Level;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, EnvFilter};
 use wgpu::{
