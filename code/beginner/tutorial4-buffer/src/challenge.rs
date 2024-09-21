@@ -24,10 +24,9 @@ use winit::{
     keyboard::{KeyCode, PhysicalKey},
     window::{Window, WindowId},
 };
-use zerocopy::AsBytes;
 
 #[repr(C)]
-#[derive(AsBytes, Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, bytemuck::Pod, bytemuck::Zeroable)]
 struct Vertex {
     position: [f32; 3],
     color: [f32; 3],
@@ -221,14 +220,14 @@ impl State {
 
         let vertex_buffer_desc = BufferInitDescriptor {
             label: Some("Vertex Buffer"),
-            contents: VERTICES.as_bytes(),
+            contents: bytemuck::cast_slice(VERTICES),
             usage: BufferUsages::VERTEX,
         };
         let vertex_buffer = device.create_buffer_init(&vertex_buffer_desc);
 
         let index_buffer_desc = BufferInitDescriptor {
             label: Some("Index Buffer"),
-            contents: INDICES.as_bytes(),
+            contents: bytemuck::cast_slice(INDICES),
             usage: BufferUsages::INDEX,
         };
         let index_buffer = device.create_buffer_init(&index_buffer_desc);
@@ -255,13 +254,13 @@ impl State {
 
         let challenge_vertex_buffer_desc = BufferInitDescriptor {
             label: Some("Challenge Vertex Buffer"),
-            contents: challenge_verts.as_slice().as_bytes(),
+            contents: bytemuck::cast_slice(&challenge_verts),
             usage: BufferUsages::VERTEX,
         };
         let challenge_vertex_buffer = device.create_buffer_init(&challenge_vertex_buffer_desc);
         let challenge_index_buffer_desc = BufferInitDescriptor {
             label: Some("Challenge Index Buffer"),
-            contents: challenge_indices.as_slice().as_bytes(),
+            contents: bytemuck::cast_slice(&challenge_indices),
             usage: BufferUsages::INDEX,
         };
         let challenge_index_buffer = device.create_buffer_init(&challenge_index_buffer_desc);

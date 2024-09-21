@@ -17,12 +17,12 @@ path = "src/challenge.rs"
 
 [dependencies]
 anyhow = "1.0"
+bytemuck = { version = "1.18", features = ["derive"] } # NEW!
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 wgpu = "22"
 winit = "0.30"
-# NEW!
-zerocopy = { version = "0.7", features = ["derive"] }
+
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 pollster = "0.3"
