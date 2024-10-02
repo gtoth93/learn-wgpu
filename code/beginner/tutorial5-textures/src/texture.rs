@@ -5,6 +5,7 @@ use wgpu::{
     Sampler, SamplerDescriptor, TextureAspect, TextureDescriptor, TextureDimension, TextureFormat,
     TextureUsages, TextureView, TextureViewDescriptor,
 };
+
 #[allow(clippy::struct_field_names, dead_code)]
 pub struct Texture {
     pub texture: wgpu::Texture,

@@ -17,9 +17,8 @@ jobs:
 
       - name: Install and Build Vuepress
         run: |
-          export NODE_OPTIONS=--openssl-legacy-provider
-          yarn install
-          yarn just-build
+          pnpm install
+          pnpm just-build
 
       - name: Deploy
         uses: JamesIves/github-pages-deploy-action@4.1.5

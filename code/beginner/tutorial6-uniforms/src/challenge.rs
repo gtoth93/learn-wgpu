@@ -4,7 +4,7 @@ mod texture;
 
 use crate::texture::Texture;
 use anyhow::Result;
-use glam::{Mat4, Vec3};
+use glam::{Mat4, Vec3A};
 use std::{f32::consts as f32_consts, sync::Arc};
 use tracing::Level;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, EnvFilter};
@@ -30,6 +30,10 @@ use winit::{
     keyboard::{KeyCode, PhysicalKey},
     window::{Window, WindowId},
 };
+
+fn degrees_to_radians(degrees: f32) -> f32 {
+    degrees * f32_consts::PI / 180.0
+}
 
 #[repr(C)]
 #[derive(Clone, Copy, Debug, bytemuck::Pod, bytemuck::Zeroable)]
@@ -76,9 +80,9 @@ const VERTICES: &[Vertex] = &[
 const INDICES: &[u16] = &[0, 1, 4, 1, 2, 4, 2, 3, 4];
 
 struct Camera {
-    eye: Vec3,
-    target: Vec3,
-    up: Vec3,
+    eye: Vec3A,
+    target: Vec3A,
+    up: Vec3A,
     aspect: f32,
     fov_y: f32,
     z_near: f32,
@@ -87,7 +91,7 @@ struct Camera {
 
 impl Camera {
     fn build_view_projection_matrix(&self) -> Mat4 {
-        let view = Mat4::look_at_rh(self.eye, self.target, self.up);
+        let view = Mat4::look_at_rh(self.eye.into(), self.target.into(), self.up.into());
         let proj = Mat4::perspective_rh(self.fov_y, self.aspect, self.z_near, self.z_far);
         proj * view
     }
@@ -370,18 +374,18 @@ impl State {
         let camera = Camera {
             // position the camera 1 unit up and 2 units back
             // +z is out of the screen
-            eye: Vec3::new(0.0, 1.0, 2.0),
+            eye: Vec3A::new(0.0, 1.0, 2.0),
             // have it look at the origin
-            target: Vec3::ZERO,
+            target: Vec3A::ZERO,
             // which way is "up"
-            up: Vec3::Y,
+            up: Vec3A::Y,
             #[allow(clippy::cast_precision_loss)]
             aspect: config.width as f32 / config.height as f32,
             fov_y: 45.0,
             z_near: 0.1,
             z_far: 100.0,
         };
-        let camera_controller = CameraController::new(0.2);
+        let camera_controller = CameraController::new(0.0125);
 
         let mut camera_uniform = CameraUniform::new();
         let camera_staging = CameraStaging::new(camera);
@@ -540,7 +544,7 @@ impl State {
     fn update(&mut self) {
         self.camera_controller
             .update_camera(&mut self.camera_staging.camera);
-        self.camera_staging.model_rotation_rad += 2.0 * f32_consts::PI / 180.0;
+        self.camera_staging.model_rotation_rad += degrees_to_radians(0.125);
         self.camera_staging.update_camera(&mut self.camera_uniform);
         self.queue.write_buffer(
             &self.camera_buffer,
