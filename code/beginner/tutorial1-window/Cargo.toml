@@ -12,13 +12,13 @@ name = "tutorial1-window"
 path = "src/main.rs"
 
 [dependencies]
-anyhow = "1.0"
-tracing = "0.1"
-tracing-subscriber = { version = "0.3", features = ["env-filter"] }
-winit = "0.30"
+anyhow.workspace = true
+tracing.workspace = true
+tracing-subscriber.workspace = true
+winit.workspace = true
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
-console_error_panic_hook = "0.1"
-tracing-wasm = "0.2"
-wasm-bindgen = "0.2"
-web-sys = { version = "0.3", features = ["Document", "Element", "Window"] }
+console_error_panic_hook.workspace = true
+tracing-wasm.workspace = true
+wasm-bindgen.workspace = true
+web-sys.workspace = true

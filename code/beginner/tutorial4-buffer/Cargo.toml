@@ -16,21 +16,20 @@ name = "tutorial4-challenge"
 path = "src/challenge.rs"
 
 [dependencies]
-anyhow = "1.0"
-bytemuck = { version = "1.18", features = ["derive"] } # NEW!
-tracing = "0.1"
-tracing-subscriber = { version = "0.3", features = ["env-filter"] }
-wgpu = "22"
-winit = "0.30"
-
+anyhow.workspace = true
+bytemuck.workspace = true # NEW!
+tracing.workspace = true
+tracing-subscriber.workspace = true
+winit.workspace = true
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
-pollster = "0.3"
+pollster.workspace = true
+wgpu.workspace = true
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
-console_error_panic_hook = "0.1"
-tracing-wasm = "0.2"
-wasm-bindgen = "0.2"
-wasm-bindgen-futures = "0.4"
-web-sys = { version = "0.3", features = ["Document", "Element", "Window"] }
-wgpu = { version = "22", features = ["webgl"] }
+console_error_panic_hook.workspace = true
+tracing-wasm.workspace = true
+wasm-bindgen.workspace = true
+wasm-bindgen-futures.workspace = true
+web-sys.workspace = true
+wgpu = { workspace = true, features = ["webgl"] }

@@ -35,13 +35,6 @@ fn degrees_to_radians(degrees: f32) -> f32 {
     degrees * f32_consts::PI / 180.0
 }
 
-const NUM_INSTANCES_PER_ROW: u16 = 10;
-const INSTANCE_DISPLACEMENT: Vec3A = Vec3A::new(
-    NUM_INSTANCES_PER_ROW as f32 * 0.5,
-    0.0,
-    NUM_INSTANCES_PER_ROW as f32 * 0.5,
-);
-
 #[repr(C)]
 #[derive(Clone, Copy, Debug, bytemuck::Pod, bytemuck::Zeroable)]
 struct Vertex {
@@ -85,6 +78,13 @@ const VERTICES: &[Vertex] = &[
 ];
 
 const INDICES: &[u16] = &[0, 1, 4, 1, 2, 4, 2, 3, 4];
+
+const NUM_INSTANCES_PER_ROW: u16 = 10;
+const INSTANCE_DISPLACEMENT: Vec3A = Vec3A::new(
+    NUM_INSTANCES_PER_ROW as f32 * 0.5,
+    0.0,
+    NUM_INSTANCES_PER_ROW as f32 * 0.5,
+);
 
 struct Camera {
     eye: Vec3A,
@@ -410,7 +410,7 @@ impl State {
         let camera = Camera {
             // position the camera 1 unit up and 2 units back
             // +z is out of the screen
-            eye: Vec3A::new(0.0, 1.0, 2.0),
+            eye: Vec3A::new(0.0, 5.0, 10.0),
             // have it look at the origin
             target: Vec3A::ZERO,
             // which way is "up"
