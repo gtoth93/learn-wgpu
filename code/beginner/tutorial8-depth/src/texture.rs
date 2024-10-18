@@ -19,7 +19,7 @@ impl Texture {
     pub const DEPTH_FORMAT: TextureFormat = TextureFormat::Depth32Float;
 
     // NEW!
-    #[allow(unused)]
+    #[allow(dead_code)]
     pub fn create_depth_texture(
         device: &Device,
         config: &SurfaceConfiguration,
@@ -63,7 +63,7 @@ impl Texture {
         }
     }
 
-    #[allow(unused)]
+    #[allow(dead_code)]
     pub fn create_depth_texture_non_comparison_sampler(
         device: &Device,
         config: &SurfaceConfiguration,

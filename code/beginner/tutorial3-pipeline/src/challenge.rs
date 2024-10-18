@@ -42,6 +42,7 @@ impl State {
 
         // The instance is a handle to our GPU
         // BackendBit::PRIMARY => Vulkan + Metal + DX12 + Browser WebGPU
+        tracing::warn!("WGPU setup");
         let instance_desc = InstanceDescriptor {
             backends: if cfg!(not(target_arch = "wasm32")) {
                 Backends::PRIMARY
@@ -63,6 +64,7 @@ impl State {
             .await
             .unwrap();
 
+        tracing::warn!("device and queue");
         let device_desc = DeviceDescriptor {
             label: None,
             required_features: Features::empty(),
@@ -77,6 +79,7 @@ impl State {
         };
         let (device, queue) = adapter.request_device(&device_desc, None).await.unwrap();
 
+        tracing::warn!("Surface");
         let surface_caps = surface.get_capabilities(&adapter);
         // Shader code in this tutorial assumes an Srgb surface texture. Using a different
         // one will result in all the colors coming out darker. If you want to support non
@@ -98,16 +101,12 @@ impl State {
             view_formats: vec![],
         };
 
-        let surface_configured;
-        #[cfg(not(target_arch = "wasm32"))]
-        {
+        let surface_configured = if cfg!(not(target_arch = "wasm32")) {
             surface.configure(&device, &config);
-            surface_configured = true;
-        }
-        #[cfg(target_arch = "wasm32")]
-        {
-            surface_configured = false;
-        }
+            true
+        } else {
+            false
+        };
 
         let shader = device.create_shader_module(wgpu::include_wgsl!("shader.wgsl"));
 
@@ -439,7 +438,14 @@ impl ApplicationHandler<UserEvent> for App {
     }
 
     fn about_to_wait(&mut self, _: &ActiveEventLoop) {
-        if let Some(ref state) = self.state {
+        if let Some(ref mut state) = self.state {
+            if !state.surface_configured {
+                let size = state.window.inner_size();
+                if size.width > 0 && size.height > 0 {
+                    state.surface_configured = true;
+                    state.resize(size);
+                }
+            }
             state.window.request_redraw();
         };
     }

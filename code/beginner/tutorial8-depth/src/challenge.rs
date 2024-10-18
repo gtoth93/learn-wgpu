@@ -5,7 +5,7 @@ mod texture;
 use crate::texture::Texture;
 use anyhow::Result;
 use glam::{Mat4, Quat, Vec3A};
-use std::{f32::consts as f32_consts, sync::Arc};
+use std::sync::Arc;
 use tracing::Level;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, EnvFilter};
 use wgpu::{
@@ -33,8 +33,8 @@ use winit::{
     window::{Window, WindowId},
 };
 
-fn degrees_to_radians(degrees: f32) -> f32 {
-    degrees * f32_consts::PI / 180.0
+const fn degrees_to_radians(degrees: f32) -> f32 {
+    degrees * std::f32::consts::PI / 180.0
 }
 
 #[repr(C)]
@@ -109,6 +109,7 @@ const INSTANCE_DISPLACEMENT: Vec3A = Vec3A::new(
     NUM_INSTANCES_PER_ROW as f32 * 0.5,
 );
 
+#[derive(Debug)]
 struct Camera {
     eye: Vec3A,
     target: Vec3A,
@@ -497,6 +498,7 @@ impl State {
 
         // The instance is a handle to our GPU
         // BackendBit::PRIMARY => Vulkan + Metal + DX12 + Browser WebGPU
+        tracing::warn!("WGPU setup");
         let instance_desc = InstanceDescriptor {
             backends: if cfg!(not(target_arch = "wasm32")) {
                 Backends::PRIMARY
@@ -518,6 +520,7 @@ impl State {
             .await
             .unwrap();
 
+        tracing::warn!("device and queue");
         let device_desc = DeviceDescriptor {
             label: None,
             required_features: Features::empty(),
@@ -532,6 +535,7 @@ impl State {
         };
         let (device, queue) = adapter.request_device(&device_desc, None).await.unwrap();
 
+        tracing::warn!("Surface");
         let surface_caps = surface.get_capabilities(&adapter);
         // Shader code in this tutorial assumes an Srgb surface texture. Using a different
         // one will result in all the colors coming out darker. If you want to support non
@@ -553,16 +557,12 @@ impl State {
             view_formats: vec![],
         };
 
-        let surface_configured;
-        #[cfg(not(target_arch = "wasm32"))]
-        {
+        let surface_configured = if cfg!(not(target_arch = "wasm32")) {
             surface.configure(&device, &config);
-            surface_configured = true;
-        }
-        #[cfg(target_arch = "wasm32")]
-        {
-            surface_configured = false;
-        }
+            true
+        } else {
+            false
+        };
 
         let diffuse_bytes = include_bytes!("happy-tree.png");
         let diffuse_texture =
@@ -611,16 +611,16 @@ impl State {
         let diffuse_bind_group = device.create_bind_group(&diffuse_bind_group_desc);
 
         let camera = Camera {
-            // position the camera 1 unit up and 2 units back
+            // Camera position is 5 units up and 10 units back
             // +z is out of the screen
             eye: Vec3A::new(0.0, 5.0, 10.0),
-            // have it look at the origin
+            // Camera looks at the origin
             target: Vec3A::ZERO,
-            // which way is "up"
+            // Unit vector which points upwards
             up: Vec3A::Y,
             #[allow(clippy::cast_precision_loss)]
             aspect: config.width as f32 / config.height as f32,
-            fov_y: 45.0,
+            fov_y: degrees_to_radians(45.0),
             z_near: 0.1,
             z_far: 100.0,
         };
@@ -825,7 +825,9 @@ impl State {
 
     fn update(&mut self) {
         self.camera_controller.update_camera(&mut self.camera);
+        // tracing::info!("{:?}", self.camera);
         self.camera_uniform.update_view_proj(&self.camera);
+        // tracing::info!("{:?}", self.camera_uniform);
         self.queue.write_buffer(
             &self.camera_buffer,
             0,
@@ -1036,7 +1038,14 @@ impl ApplicationHandler<UserEvent> for App {
     }
 
     fn about_to_wait(&mut self, _: &ActiveEventLoop) {
-        if let Some(ref state) = self.state {
+        if let Some(ref mut state) = self.state {
+            if !state.surface_configured {
+                let size = state.window.inner_size();
+                if size.width > 0 && size.height > 0 {
+                    state.surface_configured = true;
+                    state.resize(size);
+                }
+            }
             state.window.request_redraw();
         };
     }

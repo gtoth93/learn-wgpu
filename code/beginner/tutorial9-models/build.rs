@@ -1,7 +1,5 @@
-use anyhow::*;
-use fs_extra::copy_items;
+use anyhow::Result;
 use fs_extra::dir::CopyOptions;
-use std::env;
 
 fn main() -> Result<()> {
     // This tells cargo to rerun this script if something in res/ changes.
@@ -13,8 +11,8 @@ fn main() -> Result<()> {
     let paths_to_copy = vec!["res/"];
 
     // Copy the items to the directory where the executable will be built
-    let out_dir = env::var("OUT_DIR")?;
-    copy_items(&paths_to_copy, out_dir, &copy_options)?;
+    let out_dir = std::env::var("OUT_DIR")?;
+    fs_extra::copy_items(&paths_to_copy, out_dir, &copy_options)?;
 
     // Copy the items to the directory where they will be hosted
     // - The out_dir will likely be different in your project

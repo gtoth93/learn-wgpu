@@ -1,6 +1,8 @@
-use std::{path::PathBuf, process::Command};
+#![warn(clippy::pedantic)]
 
+use anyhow::Result;
 use rayon::prelude::{IntoParallelRefIterator, ParallelIterator};
+use std::{path::PathBuf, process::Command, time::Instant};
 use wasm_bindgen_cli_support::Bindgen;
 
 #[derive(Debug, serde::Deserialize, serde::Serialize)]
@@ -9,7 +11,7 @@ struct WasmTarget {
     out: String,
 }
 
-fn main() -> anyhow::Result<()> {
+fn main() -> Result<()> {
     tracing_subscriber::fmt().init();
 
     let Some(input) = std::env::args().nth(1) else {
@@ -24,7 +26,7 @@ fn main() -> anyhow::Result<()> {
     // Tell cargo to build all targets as wasm32-unknown-unknown
     let mut command = Command::new("cargo");
 
-    let start_time = std::time::Instant::now();
+    let start_time = Instant::now();
 
     command
         .arg("build")
