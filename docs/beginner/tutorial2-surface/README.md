@@ -155,7 +155,7 @@ You can view a full list of features [here](https://docs.rs/wgpu/latest/wgpu/str
 
 The `limits` field describes the limit of certain types of resources that we can create. We'll use the defaults for this tutorial so we can support most devices. You can view a list of limits [here](https://docs.rs/wgpu/latest/wgpu/struct.Limits.html).
 
-The `memory_hints` field provides the adapter with a preferred memory allocation strategy, if supproted. You can view the available options [here](https://wgpu.rs/doc/wgpu/enum.MemoryHints.html).
+The `memory_hints` field provides the adapter with a preferred memory allocation strategy, if supported. You can view the available options [here](https://wgpu.rs/doc/wgpu/enum.MemoryHints.html).
 
 ```rust
         let surface_caps = surface.get_capabilities(&adapter);
@@ -466,27 +466,35 @@ We need to update the event loop again to call this method. We'll also call `upd
 
 ```rust
 // run()
-event_loop.run(move |event, _, control_flow| {
+event_loop.run(move |event, control_flow| {
     match event {
         // ... with the other WindowEvents
-        WindowEvent::RedrawRequested(window_id) if window_id == state.window().id() => {
+        WindowEvent::RedrawRequested => {
+            // This tells winit that we want another frame after this one
+            state.window().request_redraw();
+
+            if !surface_configured {
+                return;
+            }
+
             state.update();
             match state.render() {
                 Ok(_) => {}
-                // Reconfigure the surface if lost
-                Err(wgpu::SurfaceError::Lost) => state.resize(state.size),
+                // Reconfigure the surface if it's lost or outdated
+                Err(
+                    wgpu::SurfaceError::Lost | wgpu::SurfaceError::Outdated,
+                ) => state.resize(state.size),
                 // The system is out of memory, we should probably quit
-                Err(wgpu::SurfaceError::OutOfMemory) => *control_flow = ControlFlow::Exit,
-                // All other errors (Outdated, Timeout) should be resolved by the next frame
-                Err(e) => eprintln!("{:?}", e),
-            }
-        }
+                Err(wgpu::SurfaceError::OutOfMemory) => {
+                    log::error!("OutOfMemory");
+                    control_flow.exit();
+                }
 
-        // ... at the end of the WindowEvent block
-        Event::AboutToWait => {
-            // RedrawRequested will only trigger once unless we manually
-            // request it.
-            state.window().request_redraw();
+                // This happens when the a frame takes too long to present
+                Err(wgpu::SurfaceError::Timeout) => {
+                    log::warn!("Surface timeout")
+                }
+            }
         }
         // ...
     }
