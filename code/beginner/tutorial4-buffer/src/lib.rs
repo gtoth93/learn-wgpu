@@ -439,7 +439,7 @@ impl ApplicationHandler<UserEvent> for App {
                         event_loop.exit();
                     }
 
-                    // This happens when the frame takes too long to present
+                    // This happens when a frame takes too long to present
                     Err(SurfaceError::Timeout) => {
                         tracing::warn!("Surface timeout");
                     }
@@ -458,6 +458,7 @@ impl ApplicationHandler<UserEvent> for App {
                     state.resize(size);
                 }
             }
+            // This tells winit that we want another frame
             state.window.request_redraw();
         };
     }
