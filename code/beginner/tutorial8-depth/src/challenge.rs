@@ -254,7 +254,8 @@ struct Instance {
 impl Instance {
     fn to_raw(&self) -> InstanceRaw {
         InstanceRaw {
-            model: Mat4::from_rotation_translation(self.rotation, self.position.into()),
+            model: Mat4::from_rotation_translation(self.rotation, self.position.into())
+                .to_cols_array_2d(),
         }
     }
 }
@@ -262,7 +263,7 @@ impl Instance {
 #[repr(C)]
 #[derive(Clone, Copy, Debug, bytemuck::Pod, bytemuck::Zeroable)]
 struct InstanceRaw {
-    model: Mat4,
+    model: [[f32; 4]; 4],
 }
 
 impl InstanceRaw {
