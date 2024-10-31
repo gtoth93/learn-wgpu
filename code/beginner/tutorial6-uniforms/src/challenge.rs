@@ -43,13 +43,16 @@ struct Vertex {
 }
 
 impl Vertex {
-    const ATTRIBS: [VertexAttribute; 2] = wgpu::vertex_attr_array![0 => Float32x3, 1 => Float32x2];
+    const ATTRIBS: &'static [VertexAttribute] = &wgpu::vertex_attr_array![
+        0 => Float32x3,
+        1 => Float32x2,
+    ];
 
     fn desc() -> VertexBufferLayout<'static> {
         VertexBufferLayout {
             array_stride: size_of::<Self>() as BufferAddress,
             step_mode: VertexStepMode::Vertex,
-            attributes: &Self::ATTRIBS,
+            attributes: Self::ATTRIBS,
         }
     }
 }
@@ -443,7 +446,7 @@ impl State {
         };
         let fragment_state = FragmentState {
             module: &shader,
-            entry_point: "fs_main",
+            entry_point: Some("fs_main"),
             targets: &[Some(color_target_state)],
             compilation_options: PipelineCompilationOptions::default(),
         };
@@ -452,7 +455,7 @@ impl State {
             layout: Some(&pipeline_layout),
             vertex: VertexState {
                 module: &shader,
-                entry_point: "vs_main",
+                entry_point: Some("vs_main"),
                 buffers: &[Vertex::desc()],
                 compilation_options: PipelineCompilationOptions::default(),
             },

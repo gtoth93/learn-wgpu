@@ -1,5 +1,8 @@
-use tutorial11_normals::run;
+#![warn(clippy::pedantic)]
 
-fn main() {
-    pollster::block_on(run());
+use anyhow::Result;
+
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen::prelude::wasm_bindgen(main))]
+fn main() -> Result<()> {
+    tutorial11_normals::run()
 }

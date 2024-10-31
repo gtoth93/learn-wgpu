@@ -20,8 +20,11 @@ pub struct ModelVertex {
 }
 
 impl ModelVertex {
-    const ATTRIBS: [VertexAttribute; 3] =
-        wgpu::vertex_attr_array![0 => Float32x3, 1 => Float32x2, 2 => Float32x3];
+    const ATTRIBS: &'static [VertexAttribute] = &wgpu::vertex_attr_array![
+        0 => Float32x3,
+        1 => Float32x2,
+        2 => Float32x3,
+    ];
 }
 
 impl Vertex for ModelVertex {
@@ -29,7 +32,7 @@ impl Vertex for ModelVertex {
         VertexBufferLayout {
             array_stride: size_of::<Self>() as BufferAddress,
             step_mode: VertexStepMode::Vertex,
-            attributes: &Self::ATTRIBS,
+            attributes: Self::ATTRIBS,
         }
     }
 }

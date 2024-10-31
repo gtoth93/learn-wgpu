@@ -45,13 +45,16 @@ struct Vertex {
 }
 
 impl Vertex {
-    const ATTRIBS: [VertexAttribute; 2] = wgpu::vertex_attr_array![0 => Float32x3, 1 => Float32x2];
+    const ATTRIBS: &'static [VertexAttribute] = &wgpu::vertex_attr_array![
+        0 => Float32x3,
+        1 => Float32x2,
+    ];
 
     fn desc() -> VertexBufferLayout<'static> {
         VertexBufferLayout {
             array_stride: size_of::<Self>() as BufferAddress,
             step_mode: VertexStepMode::Vertex,
-            attributes: &Self::ATTRIBS,
+            attributes: Self::ATTRIBS,
         }
     }
 }
@@ -271,8 +274,12 @@ impl InstanceRaw {
     // for each vec4. We'll have to reassemble the mat4 in the shader.
     // While our vertex shader only uses locations 0, and 1 now, in later tutorials, we'll
     // be using 2, 3, and 4, for Vertex. We'll start at slot 5, not conflict with them later
-    const ATTRIBS: [VertexAttribute; 4] =
-        wgpu::vertex_attr_array![5 => Float32x4, 6 => Float32x4, 7 => Float32x4, 8 => Float32x4];
+    const ATTRIBS: &'static [VertexAttribute] = &wgpu::vertex_attr_array![
+        5 => Float32x4,
+        6 => Float32x4,
+        7 => Float32x4,
+        8 => Float32x4,
+    ];
 
     fn desc() -> VertexBufferLayout<'static> {
         VertexBufferLayout {
@@ -281,7 +288,7 @@ impl InstanceRaw {
             // This means that our shaders will only change to use the next
             // instance when the shader starts processing a new instance
             step_mode: VertexStepMode::Instance,
-            attributes: &Self::ATTRIBS,
+            attributes: Self::ATTRIBS,
         }
     }
 }
@@ -370,7 +377,7 @@ impl DepthPass {
         };
         let fragment_state = FragmentState {
             module: &shader,
-            entry_point: "fs_main",
+            entry_point: Some("fs_main"),
             targets: &[Some(color_target)],
             compilation_options: PipelineCompilationOptions::default(),
         };
@@ -379,7 +386,7 @@ impl DepthPass {
             layout: Some(&pipeline_layout),
             vertex: VertexState {
                 module: &shader,
-                entry_point: "vs_main",
+                entry_point: Some("vs_main"),
                 buffers: &[Vertex::desc()],
                 compilation_options: PipelineCompilationOptions::default(),
             },
@@ -709,7 +716,7 @@ impl State {
         };
         let fragment_state = FragmentState {
             module: &shader,
-            entry_point: "fs_main",
+            entry_point: Some("fs_main"),
             targets: &[Some(color_target_state)],
             compilation_options: PipelineCompilationOptions::default(),
         };
@@ -729,7 +736,7 @@ impl State {
             layout: Some(&pipeline_layout),
             vertex: VertexState {
                 module: &shader,
-                entry_point: "vs_main",
+                entry_point: Some("vs_main"),
                 buffers: &[Vertex::desc(), InstanceRaw::desc()],
                 compilation_options: PipelineCompilationOptions::default(),
             },
