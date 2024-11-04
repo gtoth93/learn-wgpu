@@ -430,6 +430,7 @@ impl State {
                     count: None,
                 },
                 // NEW!
+                // normal map
                 BindGroupLayoutEntry {
                     binding: 2,
                     visibility: ShaderStages::FRAGMENT,

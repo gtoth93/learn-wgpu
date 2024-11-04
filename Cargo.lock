@@ -28,12 +28,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "adler"
-version = "1.0.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f26201604c87b1e01bd3d98f8d5d9a8fcbb815e8cedb41ffccbeb4bf593a35fe"
-
-[[package]]
 name = "adler2"
 version = "2.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -145,9 +139,9 @@ dependencies = [
 
 [[package]]
 name = "anyhow"
-version = "1.0.91"
+version = "1.0.92"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c042108f3ed77fd83760a5fd79b53be043192bb3b9dba91d8c574c0ada7850c8"
+checksum = "74f37166d7d48a0284b99dd824694c26119c700b53bf0d1540cdb147dbdaaf13"
 
 [[package]]
 name = "approx"
@@ -319,7 +313,7 @@ dependencies = [
  "addr2line",
  "cfg-if",
  "libc",
- "miniz_oxide 0.8.0",
+ "miniz_oxide",
  "object",
  "rustc-demangle",
  "windows-targets 0.52.6",
@@ -470,7 +464,7 @@ checksum = "bcfcc3cd946cb52f0bbfdbbcfa2f4e24f75ebb6c0e1002f7c25904fada18b9ec"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 2.0.85",
+ "syn 2.0.87",
 ]
 
 [[package]]
@@ -557,9 +551,9 @@ dependencies = [
 
 [[package]]
 name = "cc"
-version = "1.1.31"
+version = "1.1.34"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c2e7962b54006dcfcc61cb72735f4d89bb97061dd6a7ed882ec6b8ee53714c6f"
+checksum = "67b9470d453346108f93a59222a9a1a5724db32d0a4727b7ab7ace4b4d822dc9"
 dependencies = [
  "jobserver",
  "libc",
@@ -939,15 +933,14 @@ dependencies = [
 
 [[package]]
 name = "exr"
-version = "1.72.0"
+version = "1.73.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "887d93f60543e9a9362ef8a21beedd0a833c5d9610e18c67abe15a5963dcb1a4"
+checksum = "f83197f59927b46c04a183a619b7c29df34e63e63c7869320862268c0ef687e0"
 dependencies = [
  "bit_field",
- "flume",
  "half",
  "lebe",
- "miniz_oxide 0.7.4",
+ "miniz_oxide",
  "rayon-core",
  "smallvec",
  "zune-inflate",
@@ -987,16 +980,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a1b589b4dc103969ad3cf85c950899926ec64300a1a46d76c03a6072957036f0"
 dependencies = [
  "crc32fast",
- "miniz_oxide 0.8.0",
-]
-
-[[package]]
-name = "flume"
-version = "0.11.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "da0e4dd2a88388a1f4ccc7c9ce104604dab68d9f408dc34cd45823d5a9069095"
-dependencies = [
- "spin",
+ "miniz_oxide",
 ]
 
 [[package]]
@@ -1032,7 +1016,7 @@ checksum = "1a5c6c585bc94aaf2c7b51dd4c2ba22680844aba4c687be581871a6f518c5742"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 2.0.85",
+ "syn 2.0.87",
 ]
 
 [[package]]
@@ -2021,15 +2005,6 @@ checksum = "6877bb514081ee2a7ff5ef9de3281f14a4dd4bceac4c09388074a6b5df8a139a"
 
 [[package]]
 name = "miniz_oxide"
-version = "0.7.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b8a240ddb74feaf34a79a7add65a741f3167852fba007066dcac1ca548d89c08"
-dependencies = [
- "adler",
-]
-
-[[package]]
-name = "miniz_oxide"
 version = "0.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e2d80299ef12ff69b16a84bb182e3b9df68b5a91574d3d4fa6e41b65deec4df1"
@@ -2246,7 +2221,7 @@ dependencies = [
  "proc-macro-crate",
  "proc-macro2",
  "quote",
- "syn 2.0.85",
+ "syn 2.0.87",
 ]
 
 [[package]]
@@ -2515,7 +2490,7 @@ checksum = "a948666b637a0f465e8564c73e89d4dde00d72d4d473cc972f390fc3dcee7d9c"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 2.0.85",
+ "syn 2.0.87",
 ]
 
 [[package]]
@@ -2659,7 +2634,7 @@ checksum = "3c0f5fad0874fc7abcd4d750e76917eaebbecaa2c20bde22e1dbeeba8beb758c"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 2.0.85",
+ "syn 2.0.87",
 ]
 
 [[package]]
@@ -2701,7 +2676,7 @@ dependencies = [
  "crc32fast",
  "fdeflate",
  "flate2",
- "miniz_oxide 0.8.0",
+ "miniz_oxide",
 ]
 
 [[package]]
@@ -3222,7 +3197,7 @@ checksum = "de523f781f095e28fa605cdce0f8307e451cc0fd14e2eb4cd2e98a355b147766"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 2.0.85",
+ "syn 2.0.87",
 ]
 
 [[package]]
@@ -3402,9 +3377,6 @@ name = "spin"
 version = "0.9.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6980e8d7511241f8acf4aebddbb1ff938df5eebe98691418c4468d0b72a96a67"
-dependencies = [
- "lock_api",
-]
 
 [[package]]
 name = "spirv"
@@ -3462,9 +3434,9 @@ dependencies = [
 
 [[package]]
 name = "syn"
-version = "2.0.85"
+version = "2.0.87"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5023162dfcd14ef8f32034d8bcd4cc5ddc61ef7a247c024a33e24e1f24d21b56"
+checksum = "25aa4ce346d03a6dcd68dd8b4010bcb74e54e62c90c573f394c46eae99aba32d"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -3552,22 +3524,22 @@ dependencies = [
 
 [[package]]
 name = "thiserror"
-version = "1.0.65"
+version = "1.0.67"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5d11abd9594d9b38965ef50805c5e469ca9cc6f197f883f717e0269a3057b3d5"
+checksum = "3b3c6efbfc763e64eb85c11c25320f0737cb7364c4b6336db90aa9ebe27a0bbd"
 dependencies = [
  "thiserror-impl",
 ]
 
 [[package]]
 name = "thiserror-impl"
-version = "1.0.65"
+version = "1.0.67"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ae71770322cbd277e69d762a16c444af02aa0575ac0d174f0b9562d3b37f8602"
+checksum = "b607164372e89797d78b8e23a6d67d5d1038c1c65efd52e1389ef8b77caba2a6"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 2.0.85",
+ "syn 2.0.87",
 ]
 
 [[package]]
@@ -3779,7 +3751,7 @@ checksum = "34704c8d6ebcbc939824180af020566b01a7c01f80641264eba0999f6c2b6be7"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 2.0.85",
+ "syn 2.0.87",
 ]
 
 [[package]]
@@ -3955,24 +3927,23 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "bytemuck",
- "cfg-if",
- "cgmath",
  "console_error_panic_hook",
- "console_log",
- "env_logger",
  "fs_extra",
+ "glam 0.29.1",
  "glob",
- "image 0.24.9",
- "instant",
- "log",
- "pollster 0.3.0",
- "reqwest 0.11.27",
- "tobj 3.2.5",
+ "image 0.25.4",
+ "pollster 0.4.0",
+ "reqwest 0.12.9",
+ "tobj 4.0.2",
+ "tracing",
+ "tracing-subscriber 0.3.18",
+ "tracing-wasm",
  "wasm-bindgen",
  "wasm-bindgen-futures",
  "web-sys",
- "wgpu 22.1.0",
- "winit 0.29.15",
+ "web-time 1.1.0",
+ "wgpu 23.0.0",
+ "winit 0.30.5",
 ]
 
 [[package]]
@@ -4297,7 +4268,7 @@ dependencies = [
  "heck",
  "proc-macro2",
  "quote",
- "syn 2.0.85",
+ "syn 2.0.87",
 ]
 
 [[package]]
@@ -4337,7 +4308,7 @@ dependencies = [
  "once_cell",
  "proc-macro2",
  "quote",
- "syn 2.0.85",
+ "syn 2.0.87",
  "wasm-bindgen-shared",
 ]
 
@@ -4405,7 +4376,7 @@ checksum = "26c6ab57572f7a24a4985830b120de1594465e5d500f24afe89e16b4e833ef68"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 2.0.85",
+ "syn 2.0.87",
  "wasm-bindgen-backend",
  "wasm-bindgen-shared",
 ]
@@ -5006,7 +4977,7 @@ checksum = "2bbd5b46c938e506ecbce286b6628a02171d56153ba733b6c741fc627ec9579b"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 2.0.85",
+ "syn 2.0.87",
 ]
 
 [[package]]
@@ -5017,7 +4988,7 @@ checksum = "053c4c462dc91d3b1504c6fe5a726dd15e216ba718e84a0e46a88fbe5ded3515"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 2.0.85",
+ "syn 2.0.87",
 ]
 
 [[package]]
@@ -5470,7 +5441,7 @@ checksum = "fa4f8080344d4671fb4e831a13ad1e68092748387dfc4f55e356242fae12ce3e"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 2.0.85",
+ "syn 2.0.87",
 ]
 
 [[package]]
