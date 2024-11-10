@@ -5,15 +5,11 @@ struct Camera {
     inv_proj: mat4x4<f32>,
     inv_view: mat4x4<f32>,
 }
-@group(0) @binding(0)
-var<uniform> camera: Camera;
 
-@group(1)
-@binding(0)
-var env_map: texture_cube<f32>;
-@group(1)
-@binding(1)
-var env_sampler: sampler;
+@group(0) @binding(0) var<uniform> camera: Camera;
+
+@group(1) @binding(0) var env_map: texture_cube<f32>;
+@group(1) @binding(1) var env_sampler: sampler;
 
 struct VertexOutput {
     @builtin(position) frag_position: vec4<f32>,
@@ -21,9 +17,7 @@ struct VertexOutput {
 }
 
 @vertex
-fn vs_main(
-    @builtin(vertex_index) id: u32,
-) -> VertexOutput {
+fn vs_main(@builtin(vertex_index) id: u32) -> VertexOutput {
     let uv = vec2<f32>(vec2<u32>(
         id & 1u,
         (id >> 1u) & 1u,

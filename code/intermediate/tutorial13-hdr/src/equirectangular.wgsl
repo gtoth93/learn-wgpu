@@ -6,21 +6,13 @@ struct Face {
     right: vec3<f32>,
 }
 
-@group(0)
-@binding(0)
-var src: texture_2d<f32>;
+@group(0) @binding(0) var src: texture_2d<f32>;
 
-@group(0)
-@binding(1)
-var dst: texture_storage_2d_array<rgba32float, write>;
+@group(0) @binding(1) var dst: texture_storage_2d_array<rgba32float, write>;
 
 
-@compute
-@workgroup_size(16, 16, 1)
-fn compute_equirect_to_cubemap(
-    @builtin(global_invocation_id)
-    gid: vec3<u32>,
-) {
+@compute @workgroup_size(16, 16, 1)
+fn compute_equirect_to_cubemap(@builtin(global_invocation_id) gid: vec3<u32>) {
     // If texture size is not divisible by 32 we
     // need to make sure we don't try to write to
     // pixels that don't exist.
@@ -31,36 +23,36 @@ fn compute_equirect_to_cubemap(
     var FACES: array<Face, 6> = array(
         // FACES +X
         Face(
-            vec3(1.0, 0.0, 0.0),  // forward
-            vec3(0.0, 1.0, 0.0),  // up
+            vec3(1.0, 0.0, 0.0), // forward
+            vec3(0.0, 1.0, 0.0), // up
             vec3(0.0, 0.0, -1.0), // right
         ),
         // FACES -X
-        Face (
+        Face(
             vec3(-1.0, 0.0, 0.0),
             vec3(0.0, 1.0, 0.0),
             vec3(0.0, 0.0, 1.0),
         ),
         // FACES +Y
-        Face (
+        Face(
             vec3(0.0, -1.0, 0.0),
             vec3(0.0, 0.0, 1.0),
             vec3(1.0, 0.0, 0.0),
         ),
         // FACES -Y
-        Face (
+        Face(
             vec3(0.0, 1.0, 0.0),
             vec3(0.0, 0.0, -1.0),
             vec3(1.0, 0.0, 0.0),
         ),
         // FACES +Z
-        Face (
+        Face(
             vec3(0.0, 0.0, 1.0),
             vec3(0.0, 1.0, 0.0),
             vec3(1.0, 0.0, 0.0),
         ),
         // FACES -Z
-        Face (
+        Face(
             vec3(0.0, 0.0, -1.0),
             vec3(0.0, 1.0, 0.0),
             vec3(-1.0, 0.0, 0.0),
