@@ -20,7 +20,7 @@ fn compute_equirect_to_cubemap(@builtin(global_invocation_id) gid: vec3<u32>) {
         return;
     }
 
-    var FACES: array<Face, 6> = array(
+    var FACES = array<Face, 6>(
         // FACES +X
         Face(
             vec3(1.0, 0.0, 0.0), // forward
