@@ -19,13 +19,13 @@
   "devDependencies": {
     "@vuepress/bundler-vite": "2.0.0-rc.18",
     "@vuepress/plugin-register-components": "2.0.0-rc.54",
-    "@vuepress/plugin-search": "2.0.0-rc.55",
-    "@vuepress/plugin-seo": "2.0.0-rc.60",
-    "@vuepress/theme-default": "2.0.0-rc.60",
-    "sass-embedded": "^1.80.6",
+    "@vuepress/plugin-search": "2.0.0-rc.61",
+    "@vuepress/plugin-seo": "2.0.0-rc.61",
+    "@vuepress/theme-default": "2.0.0-rc.61",
+    "sass-embedded": "^1.81.0",
     "vite-plugin-top-level-await": "^1.4.4",
     "vite-plugin-wasm": "^3.3.0",
-    "vue": "^3.5.12",
+    "vue": "^3.5.13",
     "vuepress": "2.0.0-rc.18"
   },
   "packageManager": "pnpm@9.12.2+sha512.22721b3a11f81661ae1ec68ce1a7b879425a1ca5b991c975b074ac220b187ce56c708fe5db69f4c962c989452eee76c82877f4ee80f474cebd61ee13461b6228"

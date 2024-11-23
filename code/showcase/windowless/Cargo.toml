@@ -2,17 +2,16 @@
 name = "windowless"
 version = "0.1.0"
 authors = ["Ben Hansen <https://github.com/sotrh>"]
-edition = "2018"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
-[dependencies]
-image = "0.24"
-shaderc = "0.8"
-wgpu = { version = "22.0", features = ["spirv"] }
-pollster = "0.3"
-futures-intrusive = "0.4"
+edition = "2021"
 
 [[bin]]
 name = "windowless"
 path = "src/main.rs"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+image.workspace = true
+oneshot.workspace = true
+pollster.workspace = true
+wgpu.workspace = true

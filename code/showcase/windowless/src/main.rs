@@ -1,127 +1,114 @@
+#![warn(clippy::pedantic)]
+
+use image::{ImageBuffer, Rgba};
+use wgpu::{
+    Backends, BlendState, BufferAddress, BufferDescriptor, BufferUsages, Color, ColorTargetState,
+    ColorWrites, CommandEncoderDescriptor, DeviceDescriptor, Extent3d, Face, FragmentState,
+    FrontFace, ImageCopyBuffer, ImageCopyTexture, ImageDataLayout, Instance, InstanceDescriptor,
+    LoadOp, Maintain, MapMode, MultisampleState, Operations, Origin3d, PipelineCompilationOptions,
+    PipelineLayoutDescriptor, PolygonMode, PowerPreference, PrimitiveState, PrimitiveTopology,
+    RenderPassColorAttachment, RenderPassDescriptor, RenderPipelineDescriptor,
+    RequestAdapterOptions, StoreOp, TextureAspect, TextureDescriptor, TextureDimension,
+    TextureFormat, TextureUsages, TextureViewDescriptor, VertexState,
+};
+
+#[allow(clippy::too_many_lines)]
 async fn run() {
-    let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
-        backends: wgpu::Backends::all(),
+    let instance_desc = InstanceDescriptor {
+        backends: Backends::all(),
         ..Default::default()
-    });
+    };
+    let instance = Instance::new(instance_desc);
+
     let adapter = instance
-        .request_adapter(&wgpu::RequestAdapterOptions {
-            power_preference: wgpu::PowerPreference::default(),
+        .request_adapter(&RequestAdapterOptions {
+            power_preference: PowerPreference::default(),
             compatible_surface: None,
             force_fallback_adapter: false,
         })
         .await
         .unwrap();
     let (device, queue) = adapter
-        .request_device(&Default::default(), None)
+        .request_device(&DeviceDescriptor::default(), None)
         .await
         .unwrap();
 
     let texture_size = 256u32;
-    let texture_desc = wgpu::TextureDescriptor {
-        size: wgpu::Extent3d {
+    let texture_desc = TextureDescriptor {
+        size: Extent3d {
             width: texture_size,
             height: texture_size,
             depth_or_array_layers: 1,
         },
         mip_level_count: 1,
         sample_count: 1,
-        dimension: wgpu::TextureDimension::D2,
-        format: wgpu::TextureFormat::Rgba8UnormSrgb,
-        usage: wgpu::TextureUsages::COPY_SRC | wgpu::TextureUsages::RENDER_ATTACHMENT,
+        dimension: TextureDimension::D2,
+        format: TextureFormat::Rgba8UnormSrgb,
+        usage: TextureUsages::COPY_SRC | TextureUsages::RENDER_ATTACHMENT,
         label: None,
         view_formats: &[],
     };
     let texture = device.create_texture(&texture_desc);
-    let texture_view = texture.create_view(&Default::default());
+    let texture_view = texture.create_view(&TextureViewDescriptor::default());
 
     // we need to store this for later
-    let u32_size = std::mem::size_of::<u32>() as u32;
+    let u32_size = u32::try_from(size_of::<u32>()).unwrap();
 
-    let output_buffer_size = (u32_size * texture_size * texture_size) as wgpu::BufferAddress;
-    let output_buffer_desc = wgpu::BufferDescriptor {
+    let output_buffer_size = BufferAddress::from(u32_size * texture_size * texture_size);
+    let output_buffer_desc = BufferDescriptor {
         size: output_buffer_size,
-        usage: wgpu::BufferUsages::COPY_DST
+        usage: BufferUsages::COPY_DST
             // this tells wpgu that we want to read this buffer from the cpu
-            | wgpu::BufferUsages::MAP_READ,
+            | BufferUsages::MAP_READ,
         label: None,
         mapped_at_creation: false,
     };
     let output_buffer = device.create_buffer(&output_buffer_desc);
 
-    let vs_src = include_str!("shader.vert");
-    let fs_src = include_str!("shader.frag");
-    let compiler = shaderc::Compiler::new().unwrap();
-    let vs_spirv = compiler
-        .compile_into_spirv(
-            vs_src,
-            shaderc::ShaderKind::Vertex,
-            "shader.vert",
-            "main",
-            None,
-        )
-        .unwrap();
-    let fs_spirv = compiler
-        .compile_into_spirv(
-            fs_src,
-            shaderc::ShaderKind::Fragment,
-            "shader.frag",
-            "main",
-            None,
-        )
-        .unwrap();
-    let vs_data = wgpu::util::make_spirv(vs_spirv.as_binary_u8());
-    let fs_data = wgpu::util::make_spirv(fs_spirv.as_binary_u8());
-    let vs_module = device.create_shader_module(wgpu::ShaderModuleDescriptor {
-        label: Some("Vertex Shader"),
-        source: vs_data,
-    });
-    let fs_module = device.create_shader_module(wgpu::ShaderModuleDescriptor {
-        label: Some("Fragment Shader"),
-        source: fs_data,
-    });
+    let shader = device.create_shader_module(wgpu::include_wgsl!("shader.wgsl"));
 
-    let render_pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+    let render_pipeline_layout_desc = &PipelineLayoutDescriptor {
         label: Some("Render Pipeline Layout"),
         bind_group_layouts: &[],
         push_constant_ranges: &[],
-    });
+    };
+    let render_pipeline_layout = device.create_pipeline_layout(render_pipeline_layout_desc);
 
-    let render_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+    let color_target = ColorTargetState {
+        format: texture_desc.format,
+        blend: Some(BlendState::REPLACE),
+        write_mask: ColorWrites::ALL,
+    };
+    let fragment = FragmentState {
+        module: &shader,
+        entry_point: Some("fs_main"),
+        targets: &[Some(color_target)],
+        compilation_options: PipelineCompilationOptions::default(),
+    };
+    let render_pipeline_desc = &RenderPipelineDescriptor {
         label: Some("Render Pipeline"),
         layout: Some(&render_pipeline_layout),
-        vertex: wgpu::VertexState {
-            module: &vs_module,
-            entry_point: "main",
+        vertex: VertexState {
+            module: &shader,
+            entry_point: Some("vs_main"),
             buffers: &[],
-            compilation_options: Default::default(),
+            compilation_options: PipelineCompilationOptions::default(),
         },
-        fragment: Some(wgpu::FragmentState {
-            module: &fs_module,
-            entry_point: "main",
-            targets: &[Some(wgpu::ColorTargetState {
-                format: texture_desc.format,
-                blend: Some(wgpu::BlendState {
-                    alpha: wgpu::BlendComponent::REPLACE,
-                    color: wgpu::BlendComponent::REPLACE,
-                }),
-                write_mask: wgpu::ColorWrites::ALL,
-            })],
-            compilation_options: Default::default(),
-        }),
-        primitive: wgpu::PrimitiveState {
-            topology: wgpu::PrimitiveTopology::TriangleList,
+        fragment: Some(fragment),
+        primitive: PrimitiveState {
+            topology: PrimitiveTopology::TriangleList,
             strip_index_format: None,
-            front_face: wgpu::FrontFace::Ccw,
-            cull_mode: Some(wgpu::Face::Back),
+            front_face: FrontFace::Ccw,
+            cull_mode: Some(Face::Back),
             // Setting this to anything other than Fill requires Features::NON_FILL_POLYGON_MODE
-            polygon_mode: wgpu::PolygonMode::Fill,
+            polygon_mode: PolygonMode::Fill,
             // Requires Features::DEPTH_CLIP_CONTROL
             unclipped_depth: false,
             // Requires Features::CONSERVATIVE_RASTERIZATION
             conservative: false,
         },
         depth_stencil: None,
-        multisample: wgpu::MultisampleState {
+        multisample: MultisampleState {
             count: 1,
             mask: !0,
             alpha_to_coverage_enabled: false,
@@ -130,27 +117,29 @@ async fn run() {
         // indicates how many array layers the attachments will have.
         multiview: None,
         cache: None,
-    });
+    };
+    let render_pipeline = device.create_render_pipeline(render_pipeline_desc);
 
-    let mut encoder =
-        device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
+    let mut encoder = device.create_command_encoder(&CommandEncoderDescriptor { label: None });
 
     {
-        let render_pass_desc = wgpu::RenderPassDescriptor {
+        let clear_color = Color {
+            r: 0.1,
+            g: 0.2,
+            b: 0.3,
+            a: 1.0,
+        };
+        let color_attachment = RenderPassColorAttachment {
+            view: &texture_view,
+            resolve_target: None,
+            ops: Operations {
+                load: LoadOp::Clear(clear_color),
+                store: StoreOp::Store,
+            },
+        };
+        let render_pass_desc = RenderPassDescriptor {
             label: Some("Render Pass"),
-            color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                view: &texture_view,
-                resolve_target: None,
-                ops: wgpu::Operations {
-                    load: wgpu::LoadOp::Clear(wgpu::Color {
-                        r: 0.1,
-                        g: 0.2,
-                        b: 0.3,
-                        a: 1.0,
-                    }),
-                    store: wgpu::StoreOp::Store,
-                },
-            })],
+            color_attachments: &[Some(color_attachment)],
             depth_stencil_attachment: None,
             occlusion_query_set: None,
             timestamp_writes: None,
@@ -162,15 +151,15 @@ async fn run() {
     }
 
     encoder.copy_texture_to_buffer(
-        wgpu::ImageCopyTexture {
-            aspect: wgpu::TextureAspect::All,
+        ImageCopyTexture {
+            aspect: TextureAspect::All,
             texture: &texture,
             mip_level: 0,
-            origin: wgpu::Origin3d::ZERO,
+            origin: Origin3d::ZERO,
         },
-        wgpu::ImageCopyBuffer {
+        ImageCopyBuffer {
             buffer: &output_buffer,
-            layout: wgpu::ImageDataLayout {
+            layout: ImageDataLayout {
                 offset: 0,
                 bytes_per_row: Some(u32_size * texture_size),
                 rows_per_image: Some(texture_size),
@@ -188,16 +177,17 @@ async fn run() {
 
         // NOTE: We have to create the mapping THEN device.poll() before await
         // the future. Otherwise the application will freeze.
-        let (tx, rx) = futures_intrusive::channel::shared::oneshot_channel();
-        buffer_slice.map_async(wgpu::MapMode::Read, move |result| {
+
+        let (tx, rx) = oneshot::channel();
+        let callback = move |result| {
             tx.send(result).unwrap();
-        });
-        device.poll(wgpu::Maintain::Wait);
-        rx.receive().await.unwrap().unwrap();
+        };
+        buffer_slice.map_async(MapMode::Read, callback);
+        device.poll(Maintain::Wait);
+        rx.await.unwrap().unwrap();
 
         let data = buffer_slice.get_mapped_range();
 
-        use image::{ImageBuffer, Rgba};
         let buffer =
             ImageBuffer::<Rgba<u8>, _>::from_raw(texture_size, texture_size, data).unwrap();
         buffer.save("image.png").unwrap();
