@@ -36,7 +36,7 @@ impl State {
         // The instance is a handle to our GPU
         // BackendBit::PRIMARY => Vulkan + Metal + DX12 + Browser WebGPU
         tracing::warn!("WGPU setup");
-        let instance_desc = InstanceDescriptor {
+        let instance_desc = &InstanceDescriptor {
             backends: if cfg!(not(target_arch = "wasm32")) {
                 Backends::PRIMARY
             } else {
@@ -300,6 +300,10 @@ impl ApplicationHandler<UserEvent> for App {
                     // This happens when a frame takes too long to present
                     Err(SurfaceError::Timeout) => {
                         tracing::warn!("Surface timeout");
+                    }
+
+                    Err(SurfaceError::Other) => {
+                        tracing::error!("Surface generic error");
                     }
                 }
             }

@@ -1,9 +1,9 @@
 use anyhow::Result;
 use image::{DynamicImage, GenericImageView};
 use wgpu::{
-    AddressMode, Device, Extent3d, FilterMode, ImageCopyTexture, ImageDataLayout, Origin3d, Queue,
-    Sampler, SamplerDescriptor, TextureAspect, TextureDescriptor, TextureDimension, TextureFormat,
-    TextureUsages, TextureView, TextureViewDescriptor,
+    AddressMode, Device, Extent3d, FilterMode, Origin3d, Queue, Sampler, SamplerDescriptor,
+    TexelCopyBufferLayout, TexelCopyTextureInfo, TextureAspect, TextureDescriptor,
+    TextureDimension, TextureFormat, TextureUsages, TextureView, TextureViewDescriptor,
 };
 
 #[allow(clippy::struct_field_names, dead_code)]
@@ -58,14 +58,14 @@ impl Texture {
         let texture = device.create_texture(&texture_desc);
 
         queue.write_texture(
-            ImageCopyTexture {
+            TexelCopyTextureInfo {
                 aspect: TextureAspect::All,
                 texture: &texture,
                 mip_level: 0,
                 origin: Origin3d::ZERO,
             },
             &rgba,
-            ImageDataLayout {
+            TexelCopyBufferLayout {
                 offset: 0,
                 bytes_per_row: Some(4 * image_width),
                 rows_per_image: Some(image_height),

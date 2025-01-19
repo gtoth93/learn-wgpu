@@ -34,4 +34,3 @@ wgpu = { workspace = true, features = ["webgl"] }
 [build-dependencies]
 anyhow.workspace = true
 fs_extra.workspace = true
-glob.workspace = true

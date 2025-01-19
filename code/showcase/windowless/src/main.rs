@@ -4,17 +4,18 @@ use image::{ImageBuffer, Rgba};
 use wgpu::{
     Backends, BlendState, BufferAddress, BufferDescriptor, BufferUsages, Color, ColorTargetState,
     ColorWrites, CommandEncoderDescriptor, DeviceDescriptor, Extent3d, Face, FragmentState,
-    FrontFace, ImageCopyBuffer, ImageCopyTexture, ImageDataLayout, Instance, InstanceDescriptor,
-    LoadOp, Maintain, MapMode, MultisampleState, Operations, Origin3d, PipelineCompilationOptions,
-    PipelineLayoutDescriptor, PolygonMode, PowerPreference, PrimitiveState, PrimitiveTopology,
-    RenderPassColorAttachment, RenderPassDescriptor, RenderPipelineDescriptor,
-    RequestAdapterOptions, StoreOp, TextureAspect, TextureDescriptor, TextureDimension,
-    TextureFormat, TextureUsages, TextureViewDescriptor, VertexState,
+    FrontFace, Instance, InstanceDescriptor, LoadOp, Maintain, MapMode, MultisampleState,
+    Operations, Origin3d, PipelineCompilationOptions, PipelineLayoutDescriptor, PolygonMode,
+    PowerPreference, PrimitiveState, PrimitiveTopology, RenderPassColorAttachment,
+    RenderPassDescriptor, RenderPipelineDescriptor, RequestAdapterOptions, StoreOp,
+    TexelCopyBufferInfo, TexelCopyBufferLayout, TexelCopyTextureInfo, TextureAspect,
+    TextureDescriptor, TextureDimension, TextureFormat, TextureUsages, TextureViewDescriptor,
+    VertexState,
 };
 
 #[allow(clippy::too_many_lines)]
 async fn run() {
-    let instance_desc = InstanceDescriptor {
+    let instance_desc = &InstanceDescriptor {
         backends: Backends::all(),
         ..Default::default()
     };
@@ -151,15 +152,15 @@ async fn run() {
     }
 
     encoder.copy_texture_to_buffer(
-        ImageCopyTexture {
+        TexelCopyTextureInfo {
             aspect: TextureAspect::All,
             texture: &texture,
             mip_level: 0,
             origin: Origin3d::ZERO,
         },
-        ImageCopyBuffer {
+        TexelCopyBufferInfo {
             buffer: &output_buffer,
-            layout: ImageDataLayout {
+            layout: TexelCopyBufferLayout {
                 offset: 0,
                 bytes_per_row: Some(u32_size * texture_size),
                 rows_per_image: Some(texture_size),
