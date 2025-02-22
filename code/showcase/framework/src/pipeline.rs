@@ -1,43 +1,59 @@
-use std::num::NonZeroU32;
-
 use crate::model::Vertex;
-use anyhow::*;
+use std::num::NonZeroU32;
+use thiserror::Error;
+use wgpu::{
+    ColorTargetState, ColorWrites, CompareFunction, DepthBiasState, DepthStencilState, Device,
+    Face, FragmentState, FrontFace, IndexFormat, MultisampleState, PipelineCompilationOptions,
+    PipelineLayout, PolygonMode, PrimitiveState, PrimitiveTopology, RenderPipeline,
+    RenderPipelineDescriptor, ShaderModule, ShaderModuleDescriptor, StencilState, TextureFormat,
+    VertexBufferLayout, VertexState,
+};
+
+#[derive(Debug, Error)]
+pub enum Error {
+    #[error("No pipeline layout supplied!")]
+    NoPipelineLayout,
+    #[error("No vertex shader supplied!")]
+    NoVertexShader,
+    #[error("No fragment shader supplied!")]
+    NoFragmentShader,
+}
 
 pub struct RenderPipelineBuilder<'a> {
-    layout: Option<&'a wgpu::PipelineLayout>,
-    vertex_shader: Option<wgpu::ShaderModuleDescriptor<'a>>,
-    fragment_shader: Option<wgpu::ShaderModuleDescriptor<'a>>,
-    front_face: wgpu::FrontFace,
-    cull_mode: Option<wgpu::Face>,
+    layout: Option<&'a PipelineLayout>,
+    vertex_shader: Option<ShaderModuleDescriptor<'a>>,
+    fragment_shader: Option<ShaderModuleDescriptor<'a>>,
+    front_face: FrontFace,
+    cull_mode: Option<Face>,
     depth_bias: i32,
     depth_bias_slope_scale: f32,
     depth_bias_clamp: f32,
-    primitive_topology: wgpu::PrimitiveTopology,
-    color_states: Vec<Option<wgpu::ColorTargetState>>,
-    depth_stencil: Option<wgpu::DepthStencilState>,
-    index_format: wgpu::IndexFormat,
-    vertex_buffers: Vec<wgpu::VertexBufferLayout<'a>>,
+    primitive_topology: PrimitiveTopology,
+    color_states: Vec<Option<ColorTargetState>>,
+    depth_stencil: Option<DepthStencilState>,
+    index_format: IndexFormat,
+    vertex_buffers: Vec<VertexBufferLayout<'a>>,
     sample_count: u32,
     sample_mask: u64,
     alpha_to_coverage_enabled: bool,
     multiview: Option<NonZeroU32>,
 }
 
-impl<'a> RenderPipelineBuilder<'a> {
-    pub fn new() -> Self {
+impl<'a> Default for RenderPipelineBuilder<'a> {
+    fn default() -> Self {
         Self {
             layout: None,
             vertex_shader: None,
             fragment_shader: None,
-            front_face: wgpu::FrontFace::Ccw,
+            front_face: FrontFace::Ccw,
             cull_mode: None,
             depth_bias: 0,
             depth_bias_slope_scale: 0.0,
             depth_bias_clamp: 0.0,
-            primitive_topology: wgpu::PrimitiveTopology::TriangleList,
+            primitive_topology: PrimitiveTopology::TriangleList,
             color_states: Vec::new(),
             depth_stencil: None,
-            index_format: wgpu::IndexFormat::Uint32,
+            index_format: IndexFormat::Uint32,
             vertex_buffers: Vec::new(),
             sample_count: 1,
             sample_mask: !0,
@@ -45,30 +61,32 @@ impl<'a> RenderPipelineBuilder<'a> {
             multiview: None,
         }
     }
+}
 
-    pub fn layout(&mut self, layout: &'a wgpu::PipelineLayout) -> &mut Self {
+impl<'a> RenderPipelineBuilder<'a> {
+    pub fn layout(&mut self, layout: &'a PipelineLayout) -> &mut Self {
         self.layout = Some(layout);
         self
     }
 
-    pub fn vertex_shader(&mut self, src: wgpu::ShaderModuleDescriptor<'a>) -> &mut Self {
+    pub fn vertex_shader(&mut self, src: ShaderModuleDescriptor<'a>) -> &mut Self {
         self.vertex_shader = Some(src);
         self
     }
 
-    pub fn fragment_shader(&mut self, src: wgpu::ShaderModuleDescriptor<'a>) -> &mut Self {
+    pub fn fragment_shader(&mut self, src: ShaderModuleDescriptor<'a>) -> &mut Self {
         self.fragment_shader = Some(src);
         self
     }
 
     #[allow(dead_code)]
-    pub fn front_face(&mut self, ff: wgpu::FrontFace) -> &mut Self {
+    pub fn front_face(&mut self, ff: FrontFace) -> &mut Self {
         self.front_face = ff;
         self
     }
 
     #[allow(dead_code)]
-    pub fn cull_mode(&mut self, cm: Option<wgpu::Face>) -> &mut Self {
+    pub fn cull_mode(&mut self, cm: Option<Face>) -> &mut Self {
         self.cull_mode = cm;
         self
     }
@@ -92,53 +110,55 @@ impl<'a> RenderPipelineBuilder<'a> {
     }
 
     #[allow(dead_code)]
-    pub fn primitive_topology(&mut self, pt: wgpu::PrimitiveTopology) -> &mut Self {
+    pub fn primitive_topology(&mut self, pt: PrimitiveTopology) -> &mut Self {
         self.primitive_topology = pt;
         self
     }
 
-    pub fn color_state(&mut self, cs: wgpu::ColorTargetState) -> &mut Self {
+    pub fn color_state(&mut self, cs: ColorTargetState) -> &mut Self {
         self.color_states.push(Some(cs));
         self
     }
 
-    /// Helper method for [RenderPipelineBuilder::color_state]
-    pub fn color_solid(&mut self, format: wgpu::TextureFormat) -> &mut Self {
-        self.color_state(wgpu::ColorTargetState {
+    /// Helper method for [`RenderPipelineBuilder::color_state`]
+    pub fn color_solid(&mut self, format: TextureFormat) -> &mut Self {
+        let color_state = ColorTargetState {
             format,
             blend: None,
-            write_mask: wgpu::ColorWrites::ALL,
-        })
+            write_mask: ColorWrites::ALL,
+        };
+        self.color_state(color_state)
     }
 
-    pub fn depth_stencil(&mut self, dss: wgpu::DepthStencilState) -> &mut Self {
+    pub fn depth_stencil(&mut self, dss: DepthStencilState) -> &mut Self {
         self.depth_stencil = Some(dss);
         self
     }
 
-    /// Helper method for [RenderPipelineBuilder::depth_stencil]
+    /// Helper method for [`RenderPipelineBuilder::depth_stencil`]
     pub fn depth_no_stencil(
         &mut self,
-        format: wgpu::TextureFormat,
+        format: TextureFormat,
         depth_write_enabled: bool,
-        depth_compare: wgpu::CompareFunction,
+        depth_compare: CompareFunction,
     ) -> &mut Self {
-        self.depth_stencil(wgpu::DepthStencilState {
+        let depth_stencil = DepthStencilState {
             format,
             depth_write_enabled,
             depth_compare,
-            stencil: Default::default(),
-            bias: wgpu::DepthBiasState::default(),
-        })
+            stencil: StencilState::default(),
+            bias: DepthBiasState::default(),
+        };
+        self.depth_stencil(depth_stencil)
     }
 
-    /// Helper method for [RenderPipelineBuilder::depth_no_stencil]
-    pub fn depth_format(&mut self, format: wgpu::TextureFormat) -> &mut Self {
-        self.depth_no_stencil(format, true, wgpu::CompareFunction::Less)
+    /// Helper method for [`RenderPipelineBuilder::depth_no_stencil`]
+    pub fn depth_format(&mut self, format: TextureFormat) -> &mut Self {
+        self.depth_no_stencil(format, true, CompareFunction::Less)
     }
 
     #[allow(dead_code)]
-    pub fn index_format(&mut self, ifmt: wgpu::IndexFormat) -> &mut Self {
+    pub fn index_format(&mut self, ifmt: IndexFormat) -> &mut Self {
         self.index_format = ifmt;
         self
     }
@@ -148,7 +168,7 @@ impl<'a> RenderPipelineBuilder<'a> {
         self
     }
 
-    pub fn vertex_buffer_desc(&mut self, vb: wgpu::VertexBufferLayout<'a>) -> &mut Self {
+    pub fn vertex_buffer_desc(&mut self, vb: VertexBufferLayout<'a>) -> &mut Self {
         self.vertex_buffers.push(vb);
         self
     }
@@ -176,12 +196,12 @@ impl<'a> RenderPipelineBuilder<'a> {
         self
     }
 
-    pub fn build(&mut self, device: &wgpu::Device) -> Result<wgpu::RenderPipeline> {
+    /// # Errors
+    ///
+    /// Will return `Err` if there is no pipeline layout or if there is no vertex shader or fragment shader.
+    pub fn build(&mut self, device: &Device) -> Result<RenderPipeline, Error> {
         // We need a layout
-        if self.layout.is_none() {
-            bail!("No pipeline layout supplied!");
-        }
-        let layout = self.layout.unwrap();
+        let layout = self.layout.ok_or(Error::NoPipelineLayout)?;
 
         // Render pipelines always have a vertex shader, but due
         // to the way the builder pattern works, we can't
@@ -191,65 +211,58 @@ impl<'a> RenderPipelineBuilder<'a> {
         // We could supply a default one, but a "default" vertex
         // could take on many forms. An error is much more
         // explicit.
-        if self.vertex_shader.is_none() {
-            bail!("No vertex shader supplied!")
-        }
         let vs = create_shader_module(
             device,
-            self.vertex_shader
-                .take()
-                .context("Please include a vertex shader")?,
+            self.vertex_shader.take().ok_or(Error::NoVertexShader)?,
         );
 
         // The fragment shader is optional (IDK why, but it is).
         // Having the shader be optional is giving me issues with
         // the borrow checker so I'm going to use a default shader
         // if the user doesn't supply one.
-        let fs_spv = self
-            .fragment_shader
-            .take()
-            .context("Please include a fragment shader")?;
-        let fs = create_shader_module(device, fs_spv);
+        let fs = create_shader_module(
+            device,
+            self.fragment_shader.take().ok_or(Error::NoFragmentShader)?,
+        );
 
-        let pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+        let fragment = FragmentState {
+            module: &fs,
+            entry_point: Some("main"),
+            targets: &self.color_states,
+            compilation_options: PipelineCompilationOptions::default(),
+        };
+        let pipeline_desc = &RenderPipelineDescriptor {
             label: Some("Render Pipeline"),
             layout: Some(layout),
-            vertex: wgpu::VertexState {
+            vertex: VertexState {
                 module: &vs,
-                entry_point: "main",
+                entry_point: Some("main"),
                 buffers: &self.vertex_buffers,
-                compilation_options: Default::default(),
+                compilation_options: PipelineCompilationOptions::default(),
             },
-            fragment: Some(wgpu::FragmentState {
-                module: &fs,
-                entry_point: "main",
-                targets: &self.color_states,
-                compilation_options: Default::default(),
-            }),
-            primitive: wgpu::PrimitiveState {
+            fragment: Some(fragment),
+            primitive: PrimitiveState {
                 topology: self.primitive_topology,
                 front_face: self.front_face,
                 cull_mode: self.cull_mode,
                 strip_index_format: None,
-                polygon_mode: wgpu::PolygonMode::Fill,
+                polygon_mode: PolygonMode::Fill,
                 ..Default::default()
             },
             depth_stencil: self.depth_stencil.clone(),
-            multisample: wgpu::MultisampleState {
+            multisample: MultisampleState {
                 count: self.sample_count,
                 mask: self.sample_mask,
                 alpha_to_coverage_enabled: self.alpha_to_coverage_enabled,
             },
             multiview: self.multiview,
             cache: None,
-        });
+        };
+        let pipeline = device.create_render_pipeline(pipeline_desc);
         Ok(pipeline)
     }
 }
 
-fn create_shader_module(
-    device: &wgpu::Device,
-    spirv: wgpu::ShaderModuleDescriptor,
-) -> wgpu::ShaderModule {
-    device.create_shader_module(spirv)
+fn create_shader_module(device: &Device, desc: ShaderModuleDescriptor) -> ShaderModule {
+    device.create_shader_module(desc)
 }

@@ -1,40 +1,47 @@
-use cgmath::*;
-use wgpu::util::{BufferInitDescriptor, DeviceExt};
+use bytemuck::{Pod, Zeroable};
+use glam::{Vec3A, Vec4};
+use wgpu::{
+    util::{BufferInitDescriptor, DeviceExt},
+    BindGroup, BindGroupLayout, Buffer, BufferUsages, Device,
+};
 
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
 pub struct LightData {
-    pub position: Vector4<f32>,
-    pub color: Vector4<f32>,
+    pub position: Vec4,
+    pub color: Vec4,
 }
 
-unsafe impl bytemuck::Pod for LightData {}
-unsafe impl bytemuck::Zeroable for LightData {}
+unsafe impl Pod for LightData {}
+unsafe impl Zeroable for LightData {}
 
 pub struct LightUniform {
     #[allow(dead_code)]
     data: LightData,
     #[allow(dead_code)]
-    buffer: wgpu::Buffer,
+    buffer: Buffer,
 }
 
 impl LightUniform {
-    pub fn new(device: &wgpu::Device, position: Vector3<f32>, color: Vector3<f32>) -> Self {
+    #[must_use]
+    pub fn new(device: &Device, position: Vec3A, color: Vec3A) -> Self {
         let data = LightData {
-            position: Vector4::new(position.x, position.y, position.z, 1.0),
-            color: Vector4::new(color.x, color.y, color.z, 1.0),
+            position: position.extend(1.0),
+            color: color.extend(1.0),
         };
-        let buffer = device.create_buffer_init(&BufferInitDescriptor {
-            contents: bytemuck::cast_slice(&[data]),
-            usage: wgpu::BufferUsages::COPY_DST | wgpu::BufferUsages::UNIFORM,
+        let data_slice = &[data];
+        let buffer_desc = &BufferInitDescriptor {
+            contents: bytemuck::cast_slice(data_slice),
+            usage: BufferUsages::COPY_DST | BufferUsages::UNIFORM,
             label: Some("Light Buffer"),
-        });
+        };
+        let buffer = device.create_buffer_init(buffer_desc);
 
         Self { data, buffer }
     }
 }
 
 pub struct LightBinding {
-    pub layout: wgpu::BindGroupLayout,
-    pub bind_group: wgpu::BindGroup,
+    pub layout: BindGroupLayout,
+    pub bind_group: BindGroup,
 }

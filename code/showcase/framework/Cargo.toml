@@ -2,25 +2,27 @@
 name = "framework"
 version = "0.1.0"
 authors = ["Ben Hansen <https://github.com/sotrh>"]
-edition = "2018"
+edition = "2021"
 
 [dependencies]
-anyhow = "1.0"
-thiserror = "1.0"
-bytemuck = { version = "1.16", features = [ "derive" ] }
-cgmath = "0.18"
-env_logger = "0.10"
-pollster = "0.3"
-image = "0.24.2"
-log = "0.4"
-tobj = "2.0"
-wgpu = "22.0"
-wgpu-subscriber = "0.1"
-winit = { version = "0.29", features = ["rwh_05"] }
+bytemuck.workspace = true
+glam.workspace = true
+image.workspace = true
+thiserror.workspace = true
+tobj.workspace = true
+tracing.workspace = true
+tracing-subscriber.workspace = true
+web-time.workspace = true
+wgpu.workspace = true
+winit.workspace = true
 
-[build-dependencies]
-anyhow = "1.0"
-fs_extra = "1.2"
-glob = "0.3"
-naga = { version = "0.9", features = ["glsl-in", "spv-out", "wgsl-out"]}
-rayon = "1.5"
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+pollster.workspace = true
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+console_error_panic_hook.workspace = true
+reqwest.workspace = true
+tracing-wasm.workspace = true
+wasm-bindgen.workspace = true
+wasm-bindgen-futures.workspace = true
+web-sys.workspace = true
