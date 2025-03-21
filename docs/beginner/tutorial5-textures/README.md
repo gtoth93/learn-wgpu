@@ -49,12 +49,12 @@ Now, let's create the `Texture`:
 let texture_size = wgpu::Extent3d {
     width: dimensions.0,
     height: dimensions.1,
+    // All textures are stored as 3D, we represent our 2D texture
+    // by setting depth to 1.
     depth_or_array_layers: 1,
 };
 let diffuse_texture = device.create_texture(
     &wgpu::TextureDescriptor {
-        // All textures are stored as 3D, we represent our 2D texture
-        // by setting depth to 1.
         size: texture_size,
         mip_level_count: 1, // We'll talk about this a little later
         sample_count: 1,
@@ -84,7 +84,7 @@ The `Texture` struct has no methods to interact with the data directly. However,
 ```rust
 queue.write_texture(
     // Tells wgpu where to copy the pixel data
-    wgpu::ImageCopyTexture {
+    wgpu::TexelCopyTextureInfo {
         texture: &diffuse_texture,
         mip_level: 0,
         origin: wgpu::Origin3d::ZERO,
@@ -93,7 +93,7 @@ queue.write_texture(
     // The actual pixel data
     &diffuse_rgba,
     // The layout of the texture
-    wgpu::ImageDataLayout {
+    wgpu::TexelCopyBufferLayout {
         offset: 0,
         bytes_per_row: Some(4 * dimensions.0),
         rows_per_image: Some(dimensions.1),
@@ -120,13 +120,13 @@ let mut encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor 
 });
 
 encoder.copy_buffer_to_texture(
-    wgpu::ImageCopyBuffer {
+    wgpu::TexelCopyBufferInfo {
         buffer: &buffer,
         offset: 0,
         bytes_per_row: 4 * dimensions.0,
         rows_per_image: dimensions.1,
     },
-    wgpu::ImageCopyTexture {
+    wgpu::TexelCopyTextureInfo {
         texture: &diffuse_texture,
         mip_level: 0,
         array_layer: 0,
@@ -248,6 +248,7 @@ struct State<'a> {
     queue: wgpu::Queue,
     config: wgpu::SurfaceConfiguration,
     size: winit::dpi::PhysicalSize<u32>,
+    window: &'a wgpu::Window,
     render_pipeline: wgpu::RenderPipeline,
     vertex_buffer: wgpu::Buffer,
     index_buffer: wgpu::Buffer,
@@ -268,6 +269,7 @@ impl<'a> State<'a> {
             queue,
             config,
             size,
+            window,
             render_pipeline,
             vertex_buffer,
             index_buffer,
@@ -294,7 +296,7 @@ render_pass.draw_indexed(0..self.num_indices, 0, 0..1);
 
 ## PipelineLayout
 
-Remember the `PipelineLayout` we created back in [the pipeline section](learn-wgpu/beginner/tutorial3-pipeline#how-do-we-use-the-shaders)? Now, we finally get to use it! The `PipelineLayout` contains a list of `BindGroupLayout`s that the pipeline can use. Modify `render_pipeline_layout` to use our `texture_bind_group_layout`.
+Remember the `PipelineLayout` we created back in [the pipeline section](/learn-wgpu/beginner/tutorial3-pipeline#how-do-we-use-the-shaders)? Now, we finally get to use it! The `PipelineLayout` contains a list of `BindGroupLayout`s that the pipeline can use. Modify `render_pipeline_layout` to use our `texture_bind_group_layout`.
 
 ```rust
 async fn new(...) {
@@ -450,7 +452,7 @@ winit = { version = "0.29", features = ["rwh_05"] }
 env_logger = "0.10"
 log = "0.4"
 pollster = "0.3"
-wgpu = "22.0"
+wgpu = "24.0"
 bytemuck = { version = "1.16", features = [ "derive" ] }
 anyhow = "1.0" # NEW!
 ```
@@ -507,14 +509,14 @@ impl Texture {
         );
 
         queue.write_texture(
-            wgpu::ImageCopyTexture {
+            wgpu::TexelCopyTextureInfo {
                 aspect: wgpu::TextureAspect::All,
                 texture: &texture,
                 mip_level: 0,
                 origin: wgpu::Origin3d::ZERO,
             },
             &rgba,
-            wgpu::ImageDataLayout {
+            wgpu::TexelCopyBufferLayout {
                 offset: 0,
                 bytes_per_row: Some(4 * dimensions.0),
                 rows_per_image: Some(dimensions.1),
@@ -534,7 +536,7 @@ impl Texture {
                 ..Default::default()
             }
         );
-        
+
         Ok(Self { texture, view, sampler })
     }
 }

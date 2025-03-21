@@ -718,7 +718,7 @@ impl ApplicationHandler<UserEvent> for App {
                         state.resize(state.size);
                     }
                     // The system is out of memory, we should probably quit
-                    Err(SurfaceError::OutOfMemory) => {
+                    Err(SurfaceError::OutOfMemory | SurfaceError::Other) => {
                         tracing::error!("OutOfMemory");
                         event_loop.exit();
                     }
@@ -726,10 +726,6 @@ impl ApplicationHandler<UserEvent> for App {
                     // This happens when a frame takes too long to present
                     Err(SurfaceError::Timeout) => {
                         tracing::warn!("Surface timeout");
-                    }
-
-                    Err(SurfaceError::Other) => {
-                        tracing::error!("Surface generic error");
                     }
                 }
             }

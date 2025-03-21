@@ -736,7 +736,7 @@ impl ApplicationHandler<UserEvent> for App {
                         state.resize(state.size);
                     }
                     // The system is out of memory, we should probably quit
-                    Err(SurfaceError::OutOfMemory) => {
+                    Err(SurfaceError::OutOfMemory | SurfaceError::Other) => {
                         tracing::error!("OutOfMemory");
                         event_loop.exit();
                     }

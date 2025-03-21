@@ -13,9 +13,6 @@ struct State<'a> {
     queue: wgpu::Queue,
     config: wgpu::SurfaceConfiguration,
     size: winit::dpi::PhysicalSize<u32>,
-    // The window must be declared after the surface so
-    // it gets dropped after it as the surface contains
-    // unsafe references to the window's resources.
     window: &'a Window,
 }
 
@@ -60,14 +57,14 @@ impl<'a> State<'a> {
 
         // The instance is a handle to our GPU
         // Backends::all => Vulkan + Metal + DX12 + Browser WebGPU
-        let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
+        let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor {
             #[cfg(not(target_arch="wasm32"))]
             backends: wgpu::Backends::PRIMARY,
             #[cfg(target_arch="wasm32")]
             backends: wgpu::Backends::GL,
             ..Default::default()
         });
-        
+
         let surface = instance.create_surface(window).unwrap();
 
         let adapter = instance.request_adapter(
@@ -215,12 +212,12 @@ Now that we've configured our surface properly, we can add these new fields at t
         // ...
 
         Self {
-            window,
             surface,
             device,
             queue,
             config,
             size,
+            window,
         }
     }
 ```
@@ -290,13 +287,13 @@ cfg-if = "1"
 winit = { version = "0.29", features = ["rwh_05"] }
 env_logger = "0.10"
 log = "0.4"
-wgpu = "22.0"
+wgpu = "24.0"
 pollster = "0.3"
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 console_error_panic_hook = "0.1.6"
 console_log = "1.0"
-wgpu = { version = "22.0", features = ["webgl"]}
+wgpu = { version = "24.0", features = ["webgl"]}
 wasm-bindgen = "0.2"
 wasm-bindgen-futures = "0.4"
 web-sys = { version = "0.3", features = [
@@ -485,7 +482,7 @@ event_loop.run(move |event, control_flow| {
                     wgpu::SurfaceError::Lost | wgpu::SurfaceError::Outdated,
                 ) => state.resize(state.size),
                 // The system is out of memory, we should probably quit
-                Err(wgpu::SurfaceError::OutOfMemory) => {
+                Err(wgpu::SurfaceError::OutOfMemory | wgpu::SurfaceError::Other) => {
                     log::error!("OutOfMemory");
                     control_flow.exit();
                 }
@@ -523,7 +520,7 @@ A `RenderPassDescriptor` only has three fields: `label`, `color_attachments` and
 
 <div class="note">
 
-The `color_attachments` field is a "sparse" array. This allows you to use a pipeline that expects multiple render targets and only supplies the ones you care about. 
+The `color_attachments` field is a "sparse" array. This allows you to use a pipeline that expects multiple render targets and only supplies the ones you care about.
 
 </div>
 

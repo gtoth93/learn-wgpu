@@ -1,3 +1,6 @@
+[profile.release]
+strip = true
+
 [workspace]
 resolver = "2"
 members = [
@@ -8,7 +11,7 @@ members = [
     "code/intermediate/*",
     # showcase
     "code/showcase/*",
-    "run-wasm",
+    "run-wasm", "demo_server",
 ]
 exclude = [
     "code/showcase/imgui-demo",
