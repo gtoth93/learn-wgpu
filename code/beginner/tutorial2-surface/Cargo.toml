@@ -2,7 +2,7 @@
 name = "tutorial2-surface"
 version = "0.1.0"
 authors = ["Ben Hansen <https://github.com/sotrh>"]
-edition = "2021"
+edition = "2024"
 
 [lib]
 crate-type = ["cdylib", "rlib"]
@@ -32,3 +32,6 @@ wasm-bindgen.workspace = true
 wasm-bindgen-futures.workspace = true # NEW!
 web-sys.workspace = true
 wgpu = { workspace = true, features = ["webgl"] } # NEW!
+
+[lints]
+workspace = true

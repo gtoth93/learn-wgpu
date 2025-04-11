@@ -49,6 +49,7 @@ pub struct Projection {
 
 impl Projection {
     #[must_use]
+    #[allow(clippy::cast_precision_loss)]
     pub fn new(width: u32, height: u32, fov_y: f32, z_near: f32, z_far: f32) -> Self {
         Self {
             aspect: width as f32 / height as f32,
@@ -58,6 +59,7 @@ impl Projection {
         }
     }
 
+    #[allow(clippy::cast_precision_loss)]
     pub fn resize(&mut self, width: u32, height: u32) {
         self.aspect = width as f32 / height as f32;
     }
@@ -136,11 +138,13 @@ impl CameraController {
         }
     }
 
+    #[allow(clippy::cast_possible_truncation, clippy::similar_names)]
     pub fn process_mouse(&mut self, mouse_dx: f64, mouse_dy: f64) {
         self.rotate_horizontal = mouse_dx as f32;
         self.rotate_vertical = mouse_dy as f32;
     }
 
+    #[allow(clippy::cast_possible_truncation)]
     pub fn process_scroll(&mut self, delta: &MouseScrollDelta) {
         self.scroll = match delta {
             // I'm assuming a line is about 100 pixels

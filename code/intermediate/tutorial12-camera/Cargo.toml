@@ -2,7 +2,7 @@
 name = "tutorial12-camera"
 version = "0.1.0"
 authors = ["Ben Hansen <https://github.com/sotrh>"]
-edition = "2021"
+edition = "2024"
 
 [lib]
 crate-type = ["cdylib", "rlib"]
@@ -34,3 +34,6 @@ wgpu = { workspace = true, features = ["webgl"] }
 [build-dependencies]
 anyhow.workspace = true
 fs_extra.workspace = true
+
+[lints]
+workspace = true

@@ -1,5 +1,3 @@
-#![warn(clippy::pedantic)]
-
 use anyhow::Result;
 use tracing::Level;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, EnvFilter};

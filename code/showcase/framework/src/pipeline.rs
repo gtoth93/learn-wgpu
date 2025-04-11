@@ -10,6 +10,7 @@ use wgpu::{
 };
 
 #[derive(Debug, Error)]
+#[allow(clippy::enum_variant_names)]
 pub enum Error {
     #[error("No pipeline layout supplied!")]
     NoPipelineLayout,
@@ -39,7 +40,7 @@ pub struct RenderPipelineBuilder<'a> {
     multiview: Option<NonZeroU32>,
 }
 
-impl<'a> Default for RenderPipelineBuilder<'a> {
+impl Default for RenderPipelineBuilder<'_> {
     fn default() -> Self {
         Self {
             layout: None,

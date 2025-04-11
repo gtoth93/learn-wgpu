@@ -2,21 +2,21 @@
 name = "gifs"
 version = "0.1.0"
 authors = ["Ben Hansen <https://github.com/sotrh>"]
-edition = "2018"
+edition = "2024"
 
 
 [dependencies]
 anyhow = "1.0"
-bytemuck = { version = "1.16", features = [ "derive" ] }
+bytemuck = { version = "1.16", features = ["derive"] }
 cgmath = "0.18"
 env_logger = "0.10"
 pollster = "0.3"
 image = "0.24.2"
 log = "0.4"
-tobj = { version = "3.2", default-features = false, features = ["async"]}
+tobj = { version = "3.2", default-features = false, features = ["async"] }
 wgpu = "24.0"
 winit = { version = "0.29", features = ["rwh_05"] }
 gif = "0.11.4"
 futures-intrusive = "0.4"
 
-framework = { version = "0.1.0", path = "../framework" }
+framework = { path = "../framework" }

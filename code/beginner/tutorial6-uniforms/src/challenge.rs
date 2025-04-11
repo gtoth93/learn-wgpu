@@ -1,5 +1,3 @@
-#![warn(clippy::pedantic)]
-
 mod texture;
 
 use crate::texture::Texture;
@@ -9,18 +7,18 @@ use std::sync::Arc;
 use tracing::Level;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, EnvFilter};
 use wgpu::{
-    util::{BufferInitDescriptor, DeviceExt},
-    Backends, BindGroup, BindGroupDescriptor, BindGroupEntry, BindGroupLayoutDescriptor,
-    BindGroupLayoutEntry, BindingResource, BindingType, BlendState, Buffer, BufferAddress,
-    BufferBindingType, BufferUsages, Color, ColorTargetState, ColorWrites,
-    CommandEncoderDescriptor, Device, DeviceDescriptor, Face, Features, FragmentState, FrontFace,
-    IndexFormat, Instance, InstanceDescriptor, Limits, LoadOp, MemoryHints, MultisampleState,
-    Operations, PipelineCompilationOptions, PipelineLayoutDescriptor, PolygonMode, PowerPreference,
-    PrimitiveState, PrimitiveTopology, Queue, RenderPassColorAttachment, RenderPassDescriptor,
-    RenderPipeline, RenderPipelineDescriptor, RequestAdapterOptions, SamplerBindingType,
-    ShaderStages, StoreOp, Surface, SurfaceConfiguration, SurfaceError, TextureFormat,
-    TextureSampleType, TextureUsages, TextureViewDescriptor, TextureViewDimension, VertexAttribute,
-    VertexBufferLayout, VertexState, VertexStepMode,
+    util::{BufferInitDescriptor, DeviceExt}, Backends, BindGroup, BindGroupDescriptor, BindGroupEntry,
+    BindGroupLayoutDescriptor, BindGroupLayoutEntry, BindingResource, BindingType, BlendState, Buffer,
+    BufferAddress, BufferBindingType, BufferUsages, Color, ColorTargetState,
+    ColorWrites, CommandEncoderDescriptor, Device, DeviceDescriptor, Face, Features, FragmentState,
+    FrontFace, IndexFormat, Instance, InstanceDescriptor, Limits, LoadOp, MemoryHints,
+    MultisampleState, Operations, PipelineCompilationOptions, PipelineLayoutDescriptor, PolygonMode,
+    PowerPreference, PrimitiveState, PrimitiveTopology, Queue, RenderPassColorAttachment,
+    RenderPassDescriptor, RenderPipeline, RenderPipelineDescriptor, RequestAdapterOptions,
+    SamplerBindingType, ShaderStages, StoreOp, Surface, SurfaceConfiguration, SurfaceError,
+    TextureFormat, TextureSampleType, TextureUsages, TextureViewDescriptor, TextureViewDimension,
+    Trace, VertexAttribute, VertexBufferLayout, VertexState,
+    VertexStepMode,
 };
 use winit::{
     application::ApplicationHandler,
@@ -296,8 +294,9 @@ impl State {
                 Limits::default()
             },
             memory_hints: MemoryHints::default(),
+            trace: Trace::Off,
         };
-        let (device, queue) = adapter.request_device(&device_desc, None).await.unwrap();
+        let (device, queue) = adapter.request_device(&device_desc).await.unwrap();
 
         tracing::warn!("Surface");
         let surface_caps = surface.get_capabilities(&adapter);
@@ -659,19 +658,22 @@ impl ApplicationHandler<UserEvent> for App {
             let event_loop_proxy = self.event_loop_proxy.clone();
             let future = async move {
                 let state = state_future.await;
-                assert!(event_loop_proxy
-                    .send_event(UserEvent::StateReady(state))
-                    .is_ok());
+                assert!(
+                    event_loop_proxy
+                        .send_event(UserEvent::StateReady(state))
+                        .is_ok()
+                );
             };
             wasm_bindgen_futures::spawn_local(future)
         }
         #[cfg(not(target_arch = "wasm32"))]
         {
             let state = pollster::block_on(State::new(Arc::new(window)));
-            assert!(self
-                .event_loop_proxy
-                .send_event(UserEvent::StateReady(state))
-                .is_ok());
+            assert!(
+                self.event_loop_proxy
+                    .send_event(UserEvent::StateReady(state))
+                    .is_ok()
+            );
         }
     }
 
@@ -755,7 +757,7 @@ impl ApplicationHandler<UserEvent> for App {
             }
             // This tells winit that we want another frame
             state.window.request_redraw();
-        };
+        }
     }
 }
 

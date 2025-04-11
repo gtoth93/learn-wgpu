@@ -17,16 +17,16 @@
   "author": "",
   "license": "ISC",
   "devDependencies": {
-    "@vuepress/bundler-vite": "2.0.0-rc.19",
-    "@vuepress/plugin-register-components": "2.0.0-rc.66",
-    "@vuepress/plugin-search": "2.0.0-rc.73",
-    "@vuepress/plugin-seo": "2.0.0-rc.73",
-    "@vuepress/theme-default": "2.0.0-rc.73",
-    "sass-embedded": "^1.83.4",
-    "vite-plugin-top-level-await": "^1.4.4",
+    "@vuepress/bundler-vite": "2.0.0-rc.20",
+    "@vuepress/plugin-register-components": "2.0.0-rc.82",
+    "@vuepress/plugin-search": "2.0.0-rc.92",
+    "@vuepress/plugin-seo": "2.0.0-rc.92",
+    "@vuepress/theme-default": "2.0.0-rc.92",
+    "sass-embedded": "^1.86.3",
+    "vite-plugin-top-level-await": "^1.5.0",
     "vite-plugin-wasm": "^3.4.1",
     "vue": "^3.5.13",
-    "vuepress": "2.0.0-rc.19"
+    "vuepress": "2.0.0-rc.20"
   },
   "packageManager": "pnpm@10.0.0+sha512.b8fef5494bd3fe4cbd4edabd0745df2ee5be3e4b0b8b08fa643aa3e4c6702ccc0f00d68fa8a8c9858a735a0032485a44990ed2810526c875e416f001b17df12b"
 }

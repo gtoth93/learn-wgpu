@@ -2,7 +2,7 @@
 name = "framework"
 version = "0.1.0"
 authors = ["Ben Hansen <https://github.com/sotrh>"]
-edition = "2021"
+edition = "2024"
 
 [dependencies]
 bytemuck.workspace = true
@@ -26,3 +26,6 @@ tracing-wasm.workspace = true
 wasm-bindgen.workspace = true
 wasm-bindgen-futures.workspace = true
 web-sys.workspace = true
+
+[lints]
+workspace = true

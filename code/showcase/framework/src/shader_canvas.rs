@@ -9,15 +9,14 @@ use bytemuck::{Pod, Zeroable};
 use thiserror::Error;
 use web_time::Instant;
 use wgpu::{
-    util::{BufferInitDescriptor, DeviceExt},
-    BindGroup, BindGroupDescriptor, BindGroupEntry, BindGroupLayoutDescriptor,
-    BindGroupLayoutEntry, BindingType, BlendState, Buffer, BufferBindingType,
-    BufferUsages, ColorTargetState, ColorWrites, CommandEncoder, Device, Face, FragmentState,
-    FrontFace, LoadOp, MultisampleState, Operations, PipelineCompilationOptions,
+    util::{BufferInitDescriptor, DeviceExt}, BindGroup, BindGroupDescriptor, BindGroupEntry,
+    BindGroupLayoutDescriptor, BindGroupLayoutEntry, BindingType, BlendState, Buffer, BufferBindingType,
+    BufferUsages, ColorTargetState, ColorWrites, CommandEncoder, Device, Face, FragmentState, FrontFace,
+    LoadOp, MultisampleState, Operations, PipelineCompilationOptions,
     PipelineLayoutDescriptor, PolygonMode, PrimitiveState, PrimitiveTopology, Queue,
     RenderPassColorAttachment, RenderPassDescriptor, RenderPipeline, RenderPipelineDescriptor,
-    ShaderModuleDescriptor, ShaderStages, StoreOp, SurfaceConfiguration, TextureFormat,
-    TextureView, VertexState,
+    ShaderModuleDescriptor, ShaderStages, StoreOp, SurfaceConfiguration, TextureFormat, TextureView,
+    VertexState,
 };
 
 #[repr(C)]
@@ -119,7 +118,7 @@ pub struct ShaderCanvasBuilder<'a> {
     vert_code: Option<ShaderModuleDescriptor<'a>>,
 }
 
-impl<'a> Default for ShaderCanvasBuilder<'a> {
+impl Default for ShaderCanvasBuilder<'_> {
     fn default() -> Self {
         Self {
             canvas_size: [256.0; 2],
@@ -143,6 +142,7 @@ impl<'a> ShaderCanvasBuilder<'a> {
         self
     }
 
+    #[allow(clippy::cast_precision_loss)]
     pub fn use_swap_chain_desc(&mut self, config: &SurfaceConfiguration) -> &mut Self {
         self.display_format(config.format);
         self.canvas_size(config.width as f32, config.height as f32)

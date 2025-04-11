@@ -1,5 +1,3 @@
-#![warn(clippy::pedantic)]
-
 mod buffer;
 mod camera;
 mod light;
@@ -26,12 +24,13 @@ use tracing_subscriber::{
 };
 use web_time::{Duration, Instant};
 use wgpu::{
-    util::{BufferInitDescriptor, DeviceExt},
-    Backends, BindGroup, BindGroupDescriptor, BindGroupEntry, BindGroupLayout,
-    BindGroupLayoutDescriptor, BindGroupLayoutEntry, BindingType, BufferBindingType, BufferUsages,
-    CommandEncoder, CreateSurfaceError, Device, DeviceDescriptor, Features, Instance,
-    InstanceDescriptor, Limits, MemoryHints, PowerPreference, Queue, RequestAdapterOptions,
-    RequestDeviceError, ShaderStages, Surface, SurfaceConfiguration, TextureFormat, TextureUsages,
+    util::{BufferInitDescriptor, DeviceExt}, Backends, BindGroup, BindGroupDescriptor, BindGroupEntry,
+    BindGroupLayout, BindGroupLayoutDescriptor, BindGroupLayoutEntry, BindingType, BufferBindingType,
+    BufferUsages, CommandEncoder, CreateSurfaceError, Device, DeviceDescriptor, Features,
+    Instance, InstanceDescriptor, Limits, MemoryHints, PowerPreference, Queue,
+    RequestAdapterOptions, RequestDeviceError, ShaderStages, Surface, SurfaceConfiguration, TextureFormat,
+    TextureUsages,
+    Trace,
 };
 use winit::{
     application::ApplicationHandler,
@@ -90,7 +89,7 @@ impl Display {
                 force_fallback_adapter: false,
             })
             .await
-            .ok_or(Error::NoAdapter)?;
+            .map_err(|_| Error::NoAdapter)?;
 
         tracing::warn!("device and queue");
         let device_desc = &DeviceDescriptor {
@@ -104,8 +103,9 @@ impl Display {
                 Limits::default()
             },
             memory_hints: MemoryHints::default(),
+            trace: Trace::Off,
         };
-        let (device, queue) = adapter.request_device(device_desc, None).await?;
+        let (device, queue) = adapter.request_device(device_desc).await?;
 
         tracing::warn!("Surface");
         let surface_caps = surface.get_capabilities(&adapter);
@@ -337,9 +337,11 @@ impl<D: Demo> ApplicationHandler<UserEvent> for App<D> {
             let event_loop_proxy = self.event_loop_proxy.clone();
             let future = async move {
                 if let Ok(display) = state_future.await {
-                    assert!(event_loop_proxy
-                        .send_event(UserEvent::DisplayReady(display))
-                        .is_ok());
+                    assert!(
+                        event_loop_proxy
+                            .send_event(UserEvent::DisplayReady(display))
+                            .is_ok()
+                    );
                 }
             };
             wasm_bindgen_futures::spawn_local(future)
@@ -347,10 +349,11 @@ impl<D: Demo> ApplicationHandler<UserEvent> for App<D> {
         #[cfg(not(target_arch = "wasm32"))]
         {
             if let Ok(display) = pollster::block_on(Display::new(Arc::new(window))) {
-                assert!(self
-                    .event_loop_proxy
-                    .send_event(UserEvent::DisplayReady(display))
-                    .is_ok());
+                assert!(
+                    self.event_loop_proxy
+                        .send_event(UserEvent::DisplayReady(display))
+                        .is_ok()
+                );
             }
         }
     }
@@ -421,7 +424,7 @@ impl<D: Demo> ApplicationHandler<UserEvent> for App<D> {
                 // Freeze time while the demo is not in the foreground
                 self.last_update = Instant::now();
             }
-        };
+        }
     }
 }
 

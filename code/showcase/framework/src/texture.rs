@@ -175,12 +175,13 @@ impl<'a> Texture<'a> {
         Self::from_descriptor(device, desc)
     }
 
+    /// # Panics
     #[must_use]
     pub fn prepare_buffer_rgba(&self, device: &Device) -> RawBuffer<[f32; 4]> {
         let num_pixels =
             self.desc.size.width * self.desc.size.height * self.desc.size.depth_or_array_layers;
 
-        let buffer_size = num_pixels * size_of::<[f32; 4]>() as u32;
+        let buffer_size = num_pixels * u32::try_from(size_of::<[f32; 4]>()).unwrap();
         let buffer_usage = BufferUsages::COPY_DST | BufferUsages::MAP_READ;
         let buffer_desc = BufferDescriptor {
             size: BufferAddress::from(buffer_size),

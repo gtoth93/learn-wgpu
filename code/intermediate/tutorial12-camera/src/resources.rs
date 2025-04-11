@@ -4,11 +4,10 @@ use crate::{
 };
 use anyhow::Result;
 use glam::{Vec2, Vec3, Vec3A};
-use std::io::{BufReader, Cursor};
 use tobj::LoadOptions;
 use wgpu::{
-    util::{BufferInitDescriptor, DeviceExt},
-    BindGroupLayout, BufferUsages, Device, Queue,
+    util::{BufferInitDescriptor, DeviceExt}, BindGroupLayout, BufferUsages, Device,
+    Queue,
 };
 
 #[cfg(target_arch = "wasm32")]
@@ -23,7 +22,7 @@ fn format_url(file_name: &str) -> reqwest::Url {
     base.join(file_name).unwrap()
 }
 
-#[allow(clippy::unused_async)]
+#[allow(clippy::unused_async, dead_code)]
 pub async fn load_string(file_name: &str) -> Result<String> {
     #[cfg(target_arch = "wasm32")]
     {
@@ -74,20 +73,20 @@ pub async fn load_model(
     queue: &Queue,
     layout: &BindGroupLayout,
 ) -> Result<Model> {
-    let obj_text = load_string(file_name).await?;
-    let obj_cursor = Cursor::new(obj_text);
-    let mut obj_reader = BufReader::new(obj_cursor);
+    let obj_bytes = load_binary(file_name).await?;
+    let obj_bytes_slice: &[u8] = &obj_bytes;
 
-    let (models, obj_materials) = tobj::load_obj_buf_async(
-        &mut obj_reader,
+    let (models, obj_materials) = tobj::futures::load_obj_buf(
+        obj_bytes_slice,
         &LoadOptions {
             triangulate: true,
             single_index: true,
             ..Default::default()
         },
         |p| async move {
-            let mat_text = load_string(&p).await.unwrap();
-            tobj::load_mtl_buf(&mut BufReader::new(Cursor::new(mat_text)))
+            let mat_bytes = load_binary(p.to_str().unwrap()).await.unwrap();
+            let mat_bytes_slice: &[u8] = &mat_bytes;
+            tobj::futures::load_mtl_buf(mat_bytes_slice).await
         },
     )
     .await?;

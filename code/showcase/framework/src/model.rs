@@ -5,13 +5,14 @@ use std::{ops::Range, path::Path};
 use thiserror::Error;
 use tobj::{LoadError, LoadOptions};
 use wgpu::{
-    util::{BufferInitDescriptor, DeviceExt},
-    BindGroup, BindGroupDescriptor, BindGroupEntry, BindGroupLayout, BindingResource, Buffer,
-    BufferAddress, BufferUsages, Device, IndexFormat, Queue, RenderPass, VertexAttribute,
-    VertexBufferLayout, VertexStepMode,
+    util::{BufferInitDescriptor, DeviceExt}, BindGroup, BindGroupDescriptor, BindGroupEntry, BindGroupLayout, BindingResource,
+    Buffer, BufferAddress, BufferUsages, Device, IndexFormat, Queue, RenderPass,
+    VertexAttribute, VertexBufferLayout,
+    VertexStepMode,
 };
 
 #[derive(Debug, Error)]
+#[allow(clippy::enum_variant_names)]
 pub enum Error {
     #[error("{0:?}")]
     ObjLoadError(#[from] LoadError),
@@ -23,6 +24,8 @@ pub enum Error {
     DiffuseTextureMissing,
     #[error("Normal texture is missing")]
     NormalTextureMissing,
+    #[error("{0:?}")]
+    TryFromIntError(#[from] std::num::TryFromIntError),
 }
 
 pub trait Vertex {
@@ -121,7 +124,7 @@ pub struct Model<'a> {
     pub materials: Vec<Material<'a>>,
 }
 
-impl<'a> Model<'a> {
+impl Model<'_> {
     /// # Errors
     ///
     /// Will return `Err` if the obj file cannot be loaded or
@@ -262,7 +265,7 @@ impl<'a> Model<'a> {
                 name: m.name,
                 vertex_buffer,
                 index_buffer,
-                num_elements: m.mesh.indices.len() as u32,
+                num_elements: u32::try_from(m.mesh.indices.len())?,
                 material: m.mesh.material_id.unwrap_or(0),
             };
             meshes.push(mesh);

@@ -1,11 +1,9 @@
-#![warn(clippy::pedantic)]
-
 use image::{ImageBuffer, Rgba};
 use wgpu::{
     Backends, BlendState, BufferAddress, BufferDescriptor, BufferUsages, Color, ColorTargetState,
     ColorWrites, CommandEncoderDescriptor, DeviceDescriptor, Extent3d, Face, FragmentState,
-    FrontFace, Instance, InstanceDescriptor, LoadOp, Maintain, MapMode, MultisampleState,
-    Operations, Origin3d, PipelineCompilationOptions, PipelineLayoutDescriptor, PolygonMode,
+    FrontFace, Instance, InstanceDescriptor, LoadOp, MapMode, MultisampleState, Operations,
+    Origin3d, PipelineCompilationOptions, PipelineLayoutDescriptor, PollType, PolygonMode,
     PowerPreference, PrimitiveState, PrimitiveTopology, RenderPassColorAttachment,
     RenderPassDescriptor, RenderPipelineDescriptor, RequestAdapterOptions, StoreOp,
     TexelCopyBufferInfo, TexelCopyBufferLayout, TexelCopyTextureInfo, TextureAspect,
@@ -30,7 +28,7 @@ async fn run() {
         .await
         .unwrap();
     let (device, queue) = adapter
-        .request_device(&DeviceDescriptor::default(), None)
+        .request_device(&DeviceDescriptor::default())
         .await
         .unwrap();
 
@@ -184,7 +182,7 @@ async fn run() {
             tx.send(result).unwrap();
         };
         buffer_slice.map_async(MapMode::Read, callback);
-        device.poll(Maintain::Wait);
+        let _ = device.poll(PollType::Wait);
         rx.await.unwrap().unwrap();
 
         let data = buffer_slice.get_mapped_range();

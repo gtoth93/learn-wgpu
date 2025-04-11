@@ -1,5 +1,3 @@
-#![warn(clippy::pedantic)]
-
 use anyhow::Result;
 use rayon::prelude::{IntoParallelRefIterator, ParallelIterator};
 use std::{path::PathBuf, process::Command, time::Instant};

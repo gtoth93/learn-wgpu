@@ -2,7 +2,7 @@
 strip = true
 
 [workspace]
-resolver = "2"
+resolver = "3"
 members = [
     "code/wasm-builder",
     # beginner tutorials
@@ -16,24 +16,27 @@ members = [
 exclude = [
     "code/showcase/imgui-demo",
     "code/showcase/pong",
+    "code/showcase/gifs",
+    "code/showcase/snow",
+    "code/showcase/compute"
 ]
 
 [workspace.dependencies]
-anyhow = "1.0"
-bytemuck = { version = "1.21", features = ["derive"] }
+anyhow = "1"
+bytemuck = { version = "1", features = ["derive"] }
 cargo-run-wasm = "0.4"
 console_error_panic_hook = "0.1"
-fs_extra = "1.3"
+fs_extra = "1"
 glam = { version = "0.30", features = ["bytemuck"] }
 image = { version = "0.25", default-features = false, features = ["jpeg", "png", "hdr"] }
 oneshot = { version = "0.1", features = ["async"] }
 pollster = "0.4"
-rayon = "1.10"
+rayon = "1"
 reqwest = "0.12"
-serde = { version = "1.0", features = ["derive"] }
-serde_json = "1.0"
-thiserror = "2.0"
-tobj = { version = "4.0", default-features = false, features = ["async"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+thiserror = "2"
+tobj = { version = "4", default-features = false, features = ["futures"] }
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 tracing-wasm = "0.2"
@@ -41,6 +44,9 @@ wasm-bindgen = "0.2"
 wasm-bindgen-cli-support = "0.2"
 wasm-bindgen-futures = "0.4"
 web-sys = { version = "0.3", features = ["Document", "Element", "Window", "Location"] }
-web-time = "1.1"
-wgpu = "24"
+web-time = "1"
+wgpu = "25"
 winit = "0.30"
+
+[workspace.lints.clippy]
+pedantic = "warn"

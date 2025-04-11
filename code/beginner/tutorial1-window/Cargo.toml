@@ -2,7 +2,7 @@
 name = "tutorial1-window"
 version = "0.1.0"
 authors = ["Ben Hansen <https://github.com/sotrh>"]
-edition = "2021"
+edition = "2024"
 
 [lib]
 crate-type = ["cdylib", "rlib"]
@@ -22,3 +22,6 @@ console_error_panic_hook.workspace = true
 tracing-wasm.workspace = true
 wasm-bindgen.workspace = true
 web-sys.workspace = true
+
+[lints]
+workspace = true
