@@ -73,7 +73,7 @@ impl State {
                 Limits::default()
             },
             memory_hints: MemoryHints::default(),
-            trace: Trace::Off,
+            trace: Trace::Off, // Trace path
         };
         let (device, queue) = adapter.request_device(&device_desc).await.unwrap();
 

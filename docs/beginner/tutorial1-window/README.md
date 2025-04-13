@@ -18,7 +18,7 @@ the relevant `Cargo.toml` bits below.
 anyhow = "1.0"
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
-winit = "0.30"
+winit = { version = "0.30", features = ["android-native-activity"] }
 ```
 * The [winit](https://docs.rs/winit) crate is what we'll be using for opening windows and handling 
 various events. 
