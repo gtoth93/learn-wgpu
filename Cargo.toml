@@ -46,7 +46,7 @@ wasm-bindgen-futures = "0.4"
 web-sys = { version = "0.3", features = ["Document", "Element", "Window", "Location"] }
 web-time = "1"
 wgpu = "25"
-winit = "0.30"
+winit = { version = "0.30", features = ["android-native-activity"] }
 
 [workspace.lints.clippy]
 pedantic = "warn"
